@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Royal Wine | Bartenura Peach Bellini</title>
+    <link rel="stylesheet" href="styles/main.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./vendor/three/build/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="detail-shell">
+      <section class="detail-panel">
+        <a class="back-link" href="index.html">Back to gallery</a>
+        <div>
+          <h1 id="can-name">Loading...</h1>
+          <p id="can-tagline"></p>
+        </div>
+        <p id="can-description"></p>
+        <div id="notes-section">
+          <small>Tasting notes</small>
+          <div class="note-pills" id="note-pills"></div>
+        </div>
+        <div class="stats-row" id="stats-row">
+          <div class="stat-card" id="stat-volume">
+            <span>Volume</span>
+            <strong id="can-volume">-</strong>
+          </div>
+          <div class="stat-card" id="stat-abv">
+            <span>ABV</span>
+            <strong id="can-abv">-</strong>
+          </div>
+        </div>
+      </section>
+      <section class="viewer-panel">
+        <button class="ask-button" id="ask-button">Ask about me</button>
+        <div class="viewer-canvas" id="viewer"></div>
+        <div class="viewer-halo"></div>
+      </section>
+    </div>
+    <script type="module" src="scripts/can-viewer.js"></script>
+    <script type="module" src="scripts/voice-agent.js"></script>
+  </body>
+</html>

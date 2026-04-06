@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Royal Wine Corp | Kiosk V2</title>
+    <link rel="stylesheet" href="styles/main.css" />
+    <link rel="stylesheet" href="styles/home-v2.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./vendor/three/build/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body class="v2-shell">
+    <video class="video-background" autoplay loop muted playsinline>
+      <source src="assets/sobeloop.mp4" type="video/mp4">
+    </video>
+    <nav class="page-nav">
+      <a href="index.html" class="page-nav__link">Home</a>
+      <a href="index-v2.html" class="page-nav__link page-nav__link--active">Home V2</a>
+      <a href="camera.html" class="page-nav__link">Camera</a>
+    </nav>
+    <section class="v2-backdrop"></section>
+    <section class="v2-shell__grain"></section>
+
+    <header class="v2-header">
+      <a class="v2-header__brand" href="index.html" aria-label="Back to Royal Wine home">
+        <img
+          class="v2-header__logo"
+          src="assets/royal-wine-corp-logo.png"
+          alt="Royal Wine Corp"
+        />
+      </a>
+      <a class="v2-nav-pill" href="index.html">V1</a>
+    </header>
+
+    <main class="v2-main">
+      <h1 class="camera-title">GET A CARICATURE PICTURE OF YOURSELF</h1>
+      <section class="v2-hero">
+        <div class="v2-wave v2-wave--left"></div>
+        <div class="v2-wave v2-wave--right"></div>
+        <p class="v2-eyebrow">Royal Wine Kiosk</p>
+        <h1>Browse Bartenura</h1>
+        <p class="v2-copy">
+          Step into a beach day display with cinematic can cards and glossy highlights.
+        </p>
+        <button class="camera-entry__button" id="open-camera-button">
+          Take a picture
+        </button>
+      </section>
+
+      <section class="v2-gallery-shell">
+        <section class="model-button-grid v2-model-button-grid" id="gallery" aria-label="Can collection"></section>
+        <div class="about-action">
+          <button
+            class="v2-action-button"
+            type="button"
+            data-popup-url="https://royalwine.com/about-us/"
+          >
+            About Royal wine
+          </button>
+        </div>
+        <section class="about-action">
+          <button
+            class="v2-action-button"
+            type="button"
+            data-popup-url="https://royalwine.com/brand/"
+          >
+            Brands
+          </button>
+        </section>
+        <section class="about-action">
+          <button
+            class="v2-action-button"
+            type="button"
+            data-popup-url="https://bartenura.com/"
+          >
+            Shop Bartenura
+          </button>
+        </section>
+        <div class="gallery-empty" id="gallery-empty" hidden>
+          Royal Wine can products will show up here once products are added to the kiosk data file.
+        </div>
+      </section>
+    </main>
+
+    <div class="about-royal-modal" id="about-royal-modal" hidden>
+      <div class="about-royal-modal__panel">
+        <button
+          class="about-royal-modal__close"
+          id="about-royal-close"
+          type="button"
+          aria-label="Close"
+        >
+          x
+        </button>
+        <iframe
+          id="about-royal-frame"
+          class="about-royal-modal__frame"
+          src="https://royalwine.com/about-us/"
+          title="Royal Wine About"
+          sandbox="allow-scripts allow-forms"
+          loading="eager"
+        ></iframe>
+      </div>
+    </div>
+
+    <script>
+      const aboutUrls = {
+        about: "https://royalwine.com/about-us/",
+        brands: "https://royalwine.com/brand/",
+        bartenura: "https://bartenura.com/",
+      };
+
+      const aboutModal = document.getElementById("about-royal-modal");
+      const aboutFrame = document.getElementById("about-royal-frame");
+      const popupButtons = document.querySelectorAll("[data-popup-url]");
+      const aboutClose = document.getElementById("about-royal-close");
+      const cameraButton = document.getElementById("open-camera-button");
+      let activePopupUrl = aboutUrls.about;
+
+      cameraButton.addEventListener("click", () => {
+        window.location.href = "camera.html";
+      });
+
+      const isLockedAboutUrl = (value) => {
+        if (!value) return false;
+        try {
+          const parsed = new URL(value, window.location.href);
+          const target = new URL(activePopupUrl);
+          return parsed.origin === target.origin && parsed.pathname === target.pathname;
+        } catch {
+          return false;
+        }
+      };
+
+      const lockAboutNavigation = () => {
+        if (!isLockedAboutUrl(aboutFrame.src || "")) {
+          aboutFrame.src = activePopupUrl;
+        }
+      };
+
+      const closeAboutModal = () => {
+        aboutModal.hidden = true;
+        lockAboutNavigation();
+      };
+
+      const openPopup = (url) => {
+        activePopupUrl = aboutUrls[url] || url;
+        aboutModal.hidden = false;
+        aboutFrame.src = activePopupUrl;
+      };
+
+      aboutFrame.addEventListener("load", lockAboutNavigation);
+      popupButtons.forEach((button) => {
+        const popupUrl = button.getAttribute("data-popup-url");
+        button.addEventListener("click", () => openPopup(popupUrl));
+      });
+      aboutClose.addEventListener("click", closeAboutModal);
+      aboutModal.addEventListener("click", (event) => {
+        if (event.target === aboutModal) closeAboutModal();
+      });
+
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !aboutModal.hidden) {
+          closeAboutModal();
+        }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="scripts/home-v2-gallery.js" type="module"></script>
+  </body>
+</html>

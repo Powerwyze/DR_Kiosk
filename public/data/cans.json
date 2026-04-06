@@ -1,0 +1,38 @@
+[
+  {
+    "id": "bartenura-mimosa",
+    "name": "Bartenura Mimosa Cans",
+    "series": "Bartenura",
+    "tagline": "",
+    "description": "Effortlessly refreshing and bursting with sun-drenched flavor, this vibrant blend pairs the crisp, floral notes of our signature Moscato with the bright, zesty essence of real orange juice. Delicately sweet with a lively fizz, it delivers a clean, citrusy finish that feels like brunch in a can. No need for pitchers or peeling -just chill, pop the top, and enjoy the perfect pour every time!",
+    "model": "assets/Meshy_AI_Orange_Mimosa_0219160608_texture.glb",
+    "heroColor": "#ffb347",
+    "accentColor": "#ff8c00",
+    "notes": [
+      "Type: Sparkling",
+      "Varietal: Moscato",
+      "Style: Sweet"
+    ],
+    "page": "can.html",
+    "sourceUrl": "https://bartenura.com/pages/shop-mimosa-can",
+    "updatedFrom": "bartenura.com/pages/shop-mimosa-can"
+  },
+  {
+    "id": "peach-bellini",
+    "name": "Bartenura Peach Bellini",
+    "series": "Bartenura",
+    "tagline": "",
+    "description": "A classic Italian aperitivo reimagined. This elegant peach and wine cocktail blends the natural sweetness of sun-ripened peaches with sparkling wine, delivering the timeless taste of Venice in every sip. Imported from Italy, each can offers a perfectly balanced, refreshing experience with the sophisticated charm of a traditional Bellini. Simply chill and enjoy la dolce vita.",
+    "model": "assets/Meshy_AI_Peach_Bellini_0220171151_texture.glb",
+    "heroColor": "#f4a090",
+    "accentColor": "#e67e73",
+    "notes": [
+      "Type: Peach & Wine Cocktail",
+      "Origin: Italy",
+      "Style: Sparkling"
+    ],
+    "page": "can-peach.html",
+    "volume": "250ml",
+    "abv": "5.5%"
+  }
+]

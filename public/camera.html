@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Photo Booth | Powerwyze Kiosk</title>
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <div class="kiosk-frame"></div>
+    <div class="kiosk-content">
+      <video class="video-background" autoplay loop muted playsinline>
+        <source src="assets/sobeloop.mp4" type="video/mp4">
+      </video>
+      <header class="landing-shell">
+      <div class="landing-shell__inner">
+        <h2 class="kiosk-header-title">Kiosk Examples:</h2>
+        <nav class="kiosk-nav">
+          <a href="camera.html" class="kiosk-nav__button kiosk-nav__button--active">Photo Booth</a>
+          <a href="talking-mimosa.html" class="kiosk-nav__button">Talking Product</a>
+          <a href="company-discover.html" class="kiosk-nav__button">Company Discover</a>
+        </nav>
+      </div>
+    </header>
+    <main class="camera-shell">
+      <h1 class="camera-title">GET A CARICATURE PICTURE OF YOURSELF</h1>
+      <div class="camera-header">
+        <img src="assets/bartenura-header.jpg" alt="Bartenura" class="camera-header__image" />
+      </div>
+      <div class="camera-frame">
+        <video
+          id="camera-feed"
+          class="camera-frame__video"
+          autoplay
+          playsinline
+          muted
+        ></video>
+        <div id="camera-countdown" class="camera-countdown" aria-live="assertive"></div>
+        <div class="camera-controls">
+          <button id="capture-button" class="capture-button">Take a picture</button>
+          <span id="capture-status" class="capture-status"></span>
+        </div>
+      </div>
+      <div id="email-modal" class="email-modal" hidden>
+        <div class="email-modal__panel" role="dialog" aria-modal="true" aria-labelledby="email-modal-title">
+          <h2 id="email-modal-title">Enter email before taking your photo</h2>
+          <label class="email-modal__label" for="email-input">Email</label>
+          <input
+            id="email-input"
+            class="email-modal__input"
+            type="email"
+            autocomplete="email"
+            placeholder="Enter your email address"
+          />
+          <div class="email-modal__actions">
+            <span id="email-error" class="email-modal__error" role="alert" aria-live="polite"></span>
+            <button id="email-enter" type="button" class="email-key email-key--enter">Enter / Start Countdown</button>
+            <button id="email-cancel" type="button" class="email-key email-key--cancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div id="caricature-modal" class="caricature-modal" hidden>
+        <div class="caricature-modal__panel">
+          <div class="caricature-modal__header">
+            <h2 id="caricature-title">Processing your image</h2>
+            <p id="caricature-message">WE ARE EMAILING YOU NOW BUT ALSO COME BACK HERE IN A FEW MINUTES TO SEE YOUR PHOTO!</p>
+          </div>
+          <div id="caricature-loader" class="caricature-loader" aria-hidden="true"></div>
+          <div class="caricature-modal__image-wrap">
+            <img id="caricature-image" class="caricature-image" src="" alt="Generated caricature image" hidden />
+          </div>
+          <div class="caricature-modal__actions">
+            <button id="caricature-close" class="capture-button" type="button">Done</button>
+          </div>
+        </div>
+      </div>
+      <canvas id="camera-canvas" hidden></canvas>
+    </main>
+    <script src="scripts/camera.js"></script>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(tasklist:*)",
+      "Bash(taskkill:*)",
+      "Bash(python -m http.server:*)",
+      "Bash(python caricature_server.py:*)",
+      "Bash(timeout:*)",
+      "Bash(curl:*)",
+      "Bash(vercel:*)",
+      "Bash(npm install:*)",
+      "Bash(exit 0)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

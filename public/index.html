@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Powerwyze Kiosk Examples</title>
+    <link rel="stylesheet" href="styles/main.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./vendor/three/build/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="kiosk-content">
+      <video class="video-background" autoplay loop muted playsinline>
+        <source src="assets/sobeloop.mp4" type="video/mp4">
+      </video>
+      <header class="landing-shell">
+        <div class="landing-shell__inner">
+          <h2 class="kiosk-header-title">Kiosk Examples:</h2>
+          <nav class="kiosk-nav">
+            <a href="camera.html" class="kiosk-nav__button">Photo Booth</a>
+            <a href="talking-mimosa.html" class="kiosk-nav__button">Talking Product</a>
+            <a href="company-discover.html" class="kiosk-nav__button">Company Discover</a>
+          </nav>
+        </div>
+      </header>
+      <main>
+        <section class="welcome-section">
+          <p class="welcome-text">
+            Powerwyze provides fully customizable AI solutions package in many different Kiosk styles, click on the different examples above
+          </p>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

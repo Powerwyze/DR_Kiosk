@@ -1,0 +1,24 @@
+# Build/runtime artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+logs/
+tmp*.err
+tmp*.out
+temp_out.txt
+.env
+package/
+public/vendor/three/examples/jsm/
+!public/vendor/three/examples/jsm/controls/OrbitControls.js
+!public/vendor/three/examples/jsm/loaders/GLTFLoader.js
+
+# Local model source folders and compressed packs
+Meshy_AI_*_texture_fbx/
+Meshy_AI_*_texture_obj/
+Meshy_AI_*_obj/
+Meshy_AI_*_fbx/
+three-0.160.0.tgz
+*.zip
+
+.vercel
