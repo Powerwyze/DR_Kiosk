@@ -1,11 +1,14 @@
 import base64
 import json
+import os
 import re
 from http.server import BaseHTTPRequestHandler
-from typing import Optional
+from typing import Dict, Optional, Tuple
 
 
-WEBHOOK_URL = "https://triggers.app.pinkfish.ai/ext/webhook/NeEkkkzAzF5JJpI1kqNJ71dAqvnxku531If8slLs/triggers/d6gem2d11m2s73jna0l0"
+DEFAULT_TRIGGER_API_URL = "https://triggers.app.pinkfish.ai/ext/triggers/d79rk05214qs73kh5hc0"
+DEFAULT_WEBHOOK_URL = "https://triggers.app.pinkfish.ai/ext/webhook/NeEkkkzAzF5JJpI1kqNJ71dAqvnxku531If8slLs/triggers/d79rk05214qs73kh5hc0"
+DEFAULT_API_KEY_HEADER = "x-api-key"
 
 
 def decode_data_url(image_data: str) -> bytes:
@@ -28,14 +31,34 @@ def sanitize_filename(value: str) -> str:
 
 def build_filename(email: Optional[str] = None) -> str:
     if email:
-        # Return the email as-is without modification
         return email.lower()
     else:
         return "kiosk_capture"
 
 
-def send_to_webhook(image_data_url: str, email: str, filename: str) -> dict:
-    """Send image data to the webhook endpoint."""
+def resolve_upstream() -> Tuple[str, Dict[str, str]]:
+    trigger_api_url = os.getenv("PINKFISH_TRIGGER_API_URL", DEFAULT_TRIGGER_API_URL).strip()
+    webhook_url = os.getenv("PINKFISH_WEBHOOK_URL", DEFAULT_WEBHOOK_URL).strip()
+    api_key = os.getenv("PINKFISH_API_KEY", "").strip()
+    api_key_header = os.getenv("PINKFISH_API_KEY_HEADER", DEFAULT_API_KEY_HEADER).strip()
+    headers = {"Content-Type": "application/json"}
+
+    if api_key:
+        headers[api_key_header or DEFAULT_API_KEY_HEADER] = api_key
+        return trigger_api_url, headers
+
+    return webhook_url, headers
+
+
+def parse_response_payload(response) -> dict:
+    content_type = (response.headers.get("content-type") or "").lower()
+    if "application/json" in content_type:
+        return response.json()
+    text = response.text.strip()
+    return {"raw": text} if text else {}
+
+
+def send_to_upstream(image_data_url: str, email: str, filename: str) -> dict:
     import requests
 
     payload = {
@@ -43,10 +66,13 @@ def send_to_webhook(image_data_url: str, email: str, filename: str) -> dict:
         "email": email,
         "fileName": filename
     }
+    upstream_url, headers = resolve_upstream()
 
-    response = requests.post(WEBHOOK_URL, json=payload, timeout=30)
+    response = requests.post(upstream_url, json=payload, headers=headers, timeout=45)
     response.raise_for_status()
-    return response.json() if response.text else {}
+    parsed = parse_response_payload(response)
+    parsed["upstreamUrl"] = upstream_url
+    return parsed
 
 
 class handler(BaseHTTPRequestHandler):
@@ -67,15 +93,15 @@ class handler(BaseHTTPRequestHandler):
             # Build filename from email
             filename = build_filename(email)
 
-            # Send to webhook
-            webhook_response = send_to_webhook(image_data_url, email, filename)
+            # Send to Pinkfish trigger/webhook
+            upstream_response = send_to_upstream(image_data_url, email, filename)
 
             # Return success response
             response = {
                 "status": "success",
                 "email": email,
                 "fileName": filename,
-                "webhookResponse": webhook_response
+                "upstreamResponse": upstream_response
             }
 
             body = json.dumps(response).encode("utf-8")
@@ -99,5 +125,5 @@ class handler(BaseHTTPRequestHandler):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization")
         self.end_headers()
