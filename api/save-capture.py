@@ -7,8 +7,10 @@ from typing import Dict, Optional, Tuple
 
 
 DEFAULT_TRIGGER_API_URL = "https://triggers.app.pinkfish.ai/ext/triggers/d79rk05214qs73kh5hc0"
-DEFAULT_WEBHOOK_URL = "https://triggers.app.pinkfish.ai/ext/webhook/NeEkkkzAzF5JJpI1kqNJ71dAqvnxku531If8slLs/triggers/d79rk05214qs73kh5hc0"
+DEFAULT_TRIGGER_API_KEY = "NeEkkkzAzF5JJpI1kqNJ71dAqvnxku531If8slLs"
 DEFAULT_API_KEY_HEADER = "x-api-key"
+DEFAULT_API_WAIT_HEADER = "x-api-wait"
+DEFAULT_API_WAIT_VALUE = "true"
 
 
 def decode_data_url(image_data: str) -> bytes:
@@ -38,16 +40,18 @@ def build_filename(email: Optional[str] = None) -> str:
 
 def resolve_upstream() -> Tuple[str, Dict[str, str]]:
     trigger_api_url = os.getenv("PINKFISH_TRIGGER_API_URL", DEFAULT_TRIGGER_API_URL).strip()
-    webhook_url = os.getenv("PINKFISH_WEBHOOK_URL", DEFAULT_WEBHOOK_URL).strip()
-    api_key = os.getenv("PINKFISH_API_KEY", "").strip()
+    api_key = os.getenv("PINKFISH_API_KEY", DEFAULT_TRIGGER_API_KEY).strip()
     api_key_header = os.getenv("PINKFISH_API_KEY_HEADER", DEFAULT_API_KEY_HEADER).strip()
+    api_wait_header = os.getenv("PINKFISH_API_WAIT_HEADER", DEFAULT_API_WAIT_HEADER).strip()
+    api_wait_value = os.getenv("PINKFISH_API_WAIT_VALUE", DEFAULT_API_WAIT_VALUE).strip() or DEFAULT_API_WAIT_VALUE
     headers = {"Content-Type": "application/json"}
 
-    if api_key:
-        headers[api_key_header or DEFAULT_API_KEY_HEADER] = api_key
-        return trigger_api_url, headers
+    if not api_key:
+        raise ValueError("Missing Pinkfish API key.")
 
-    return webhook_url, headers
+    headers[api_key_header or DEFAULT_API_KEY_HEADER] = api_key
+    headers[api_wait_header or DEFAULT_API_WAIT_HEADER] = api_wait_value
+    return trigger_api_url, headers
 
 
 def parse_response_payload(response) -> dict:

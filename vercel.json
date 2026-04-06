@@ -20,6 +20,38 @@
       "destination": "/public/$1"
     }
   ],
+  "redirects": [
+    {
+      "source": "/camera.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/index-v2.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/talking-mimosa.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/company-discover.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/can.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/can-peach.html",
+      "destination": "/",
+      "permanent": false
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
