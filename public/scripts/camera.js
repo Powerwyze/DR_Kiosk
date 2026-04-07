@@ -19,6 +19,10 @@ const captureDurationSeconds = 5;
 const saveCaptureEndpoint = "/save-capture";
 const defaultCaptureButtonLabel = "Take Picture";
 const uploadingCaptureButtonLabel = "Uploading...";
+const uploadTargetBytes = 220 * 1024;
+const uploadHardMaxBytes = 320 * 1024;
+const uploadMaxEdgePx = 900;
+const uploadMinScale = 0.3;
 
 let activeStream = null;
 let countdownTimer = null;
@@ -72,6 +76,71 @@ function buildPopupMessage(payload) {
   }
 
   return `Your look is stylish and full of personality. For fun in the Dominican Republic, visit the Colonial Zone for music, food, and history. ${deliveryMessage}`;
+}
+
+function estimateDataUrlBytes(dataUrl) {
+  if (typeof dataUrl !== "string") {
+    return 0;
+  }
+  const commaIndex = dataUrl.indexOf(",");
+  const base64 = commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : dataUrl;
+  return Math.floor((base64.length * 3) / 4);
+}
+
+function captureOptimizedImageData(videoEl) {
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return "";
+  }
+
+  const sourceWidth = videoEl.videoWidth;
+  const sourceHeight = videoEl.videoHeight;
+  const maxEdge = Math.max(sourceWidth, sourceHeight);
+
+  let scale = Math.min(1, uploadMaxEdgePx / maxEdge);
+  scale = Math.max(scale, uploadMinScale);
+  let quality = 0.86;
+
+  let bestDataUrl = "";
+  let bestBytes = Number.POSITIVE_INFINITY;
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const width = Math.max(1, Math.round(sourceWidth * scale));
+    const height = Math.max(1, Math.round(sourceHeight * scale));
+
+    canvas.width = width;
+    canvas.height = height;
+    context.drawImage(videoEl, 0, 0, width, height);
+
+    const candidateData = canvas.toDataURL("image/jpeg", quality);
+    const candidateBytes = estimateDataUrlBytes(candidateData);
+
+    if (candidateBytes < bestBytes) {
+      bestDataUrl = candidateData;
+      bestBytes = candidateBytes;
+    }
+
+    if (candidateBytes <= uploadTargetBytes) {
+      return candidateData;
+    }
+
+    if (candidateBytes > uploadHardMaxBytes && quality > 0.48) {
+      quality = Math.max(0.48, quality - 0.12);
+      continue;
+    }
+
+    if (scale > uploadMinScale) {
+      scale = Math.max(uploadMinScale, scale * 0.85);
+      quality = Math.min(0.82, quality + 0.04);
+      continue;
+    }
+
+    if (quality > 0.42) {
+      quality = Math.max(0.42, quality - 0.08);
+    }
+  }
+
+  return bestDataUrl;
 }
 
 function showGifPreview() {
@@ -191,12 +260,16 @@ function capturePhoto() {
     return;
   }
 
-  const context = canvas.getContext("2d");
-  canvas.width = cameraFeed.videoWidth;
-  canvas.height = cameraFeed.videoHeight;
-  context.drawImage(cameraFeed, 0, 0, canvas.width, canvas.height);
+  const imageData = captureOptimizedImageData(cameraFeed);
+  if (!imageData) {
+    captureStatus.textContent = "Could not prepare photo. Please try again.";
+    showGifPreview();
+    resetCaptureButtonLabel();
+    captureButton.disabled = false;
+    readyForCapture = true;
+    return;
+  }
 
-  const imageData = canvas.toDataURL("image/jpeg", 0.92);
   sendPhoto(imageData, customerEmail);
 }
 
