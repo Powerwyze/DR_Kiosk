@@ -162,6 +162,7 @@ function hideGifPreview() {
 function showUploadPopup(title, message, canClose) {
   resultTitle.textContent = title;
   resultMessage.textContent = message;
+  resultCloseButton.hidden = !canClose;
   resultCloseButton.disabled = !canClose;
   resultModal.hidden = false;
 }
