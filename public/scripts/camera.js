@@ -11,13 +11,6 @@ const emailError = document.getElementById("email-error");
 const emailEnterButton = document.getElementById("email-enter");
 const emailCancelButton = document.getElementById("email-cancel");
 
-const processingModal = document.getElementById("processing-modal");
-const processingMessage = document.getElementById("processing-message");
-const processingCloseButton = document.getElementById("processing-close");
-const activitiesOpenButton = document.getElementById("activities-open");
-const activitiesModal = document.getElementById("activities-modal");
-const activitiesCloseButton = document.getElementById("activities-close");
-
 const resultModal = document.getElementById("result-modal");
 const resultMessage = document.getElementById("result-message");
 const resultCloseButton = document.getElementById("result-close");
@@ -25,30 +18,18 @@ const resultCloseButton = document.getElementById("result-close");
 const captureDurationSeconds = 5;
 const saveCaptureEndpoint = "/save-capture";
 const defaultCaptureButtonLabel = "Take Picture";
-const cameraConstraints = {
-  video: {
-    facingMode: "user",
-    width: { ideal: 1280 },
-    height: { ideal: 960 },
-  },
-  audio: false,
-};
+const uploadingCaptureButtonLabel = "Uploading...";
 
 let activeStream = null;
 let countdownTimer = null;
 let readyForCapture = true;
 let customerEmail = "";
-let cameraRefreshPromise = null;
-let uploadInFlight = false;
 
 startCamera();
 
 captureButton.addEventListener("click", onCaptureClick);
 emailEnterButton.addEventListener("click", onEmailConfirm);
 emailCancelButton.addEventListener("click", closeEmailModal);
-activitiesOpenButton.addEventListener("click", openActivitiesModal);
-activitiesCloseButton.addEventListener("click", closeActivitiesModal);
-processingCloseButton.addEventListener("click", onProcessingClose);
 resultCloseButton.addEventListener("click", closeResultModal);
 emailInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -92,103 +73,26 @@ function hideGifPreview() {
   }
 }
 
-function stopCameraStream() {
-  if (!activeStream) {
-    return;
-  }
-  activeStream.getTracks().forEach((track) => track.stop());
-  activeStream = null;
-  cameraFeed.srcObject = null;
-}
-
-function hasLiveStream(stream) {
-  if (!stream || typeof stream.getVideoTracks !== "function") {
-    return false;
-  }
-  return stream.getVideoTracks().some((track) => track.readyState === "live");
-}
-
-function bindStreamRecovery(stream) {
-  const tracks = stream?.getVideoTracks?.() || [];
-  tracks.forEach((track) => {
-    track.onended = () => {
-      if (stream === activeStream) {
-        refreshCameraStream().catch((error) => console.error(error));
-      }
-    };
-  });
-}
-
-async function createCameraStream() {
-  const stream = await navigator.mediaDevices.getUserMedia(cameraConstraints);
-  await trySetMinimumZoom(stream);
-  bindStreamRecovery(stream);
-  return stream;
-}
-
-async function attachCameraStream(newStream) {
-  const previousStream = activeStream;
-  activeStream = newStream;
-  cameraFeed.srcObject = newStream;
-  await cameraFeed.play();
-
-  if (previousStream && previousStream !== newStream) {
-    previousStream.getTracks().forEach((track) => track.stop());
-  }
-}
-
 async function startCamera() {
   try {
-    const stream = await createCameraStream();
-    await attachCameraStream(stream);
+    activeStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "user",
+        width: { ideal: 1280 },
+        height: { ideal: 960 },
+      },
+      audio: false,
+    });
+    await trySetMinimumZoom(activeStream);
+    cameraFeed.srcObject = activeStream;
+    await cameraFeed.play();
     captureStatus.textContent = "Tap Take Picture to start";
-    captureButton.disabled = false;
     resetCaptureButtonLabel();
   } catch (error) {
     console.error(error);
     captureStatus.textContent = "Camera access denied. Enable camera permissions.";
     captureButton.disabled = true;
   }
-}
-
-async function refreshCameraStream() {
-  if (cameraRefreshPromise) {
-    return cameraRefreshPromise;
-  }
-
-  cameraRefreshPromise = (async () => {
-    try {
-      const newStream = await createCameraStream();
-      await attachCameraStream(newStream);
-      captureStatus.textContent = "Tap Take Picture to start";
-      captureButton.disabled = false;
-      resetCaptureButtonLabel();
-    } catch (error) {
-      console.error(error);
-      if (!hasLiveStream(activeStream)) {
-        captureStatus.textContent = "Camera access denied. Enable camera permissions.";
-        captureButton.disabled = true;
-      } else {
-        cameraFeed.srcObject = activeStream;
-        await cameraFeed.play().catch(() => {});
-      }
-    }
-  })();
-
-  try {
-    await cameraRefreshPromise;
-  } finally {
-    cameraRefreshPromise = null;
-  }
-}
-
-async function ensureCameraPlayback() {
-  if (hasLiveStream(activeStream)) {
-    cameraFeed.srcObject = activeStream;
-    await cameraFeed.play().catch(() => {});
-    return;
-  }
-  await refreshCameraStream();
 }
 
 async function trySetMinimumZoom(stream) {
@@ -219,55 +123,18 @@ function onCaptureClick() {
 
 function openEmailModal() {
   emailError.textContent = "";
-  emailInput.value = "";
+  emailInput.value = customerEmail;
   emailModal.hidden = false;
   emailInput.focus({ preventScroll: true });
 }
 
 function closeEmailModal() {
   emailModal.hidden = true;
-  resetCaptureSession();
-}
-
-function openProcessingModal() {
-  processingMessage.textContent =
-    "We are updating your photo and will email you shortly. While you wait, checkout some fun activities to do in Dominican Republic.";
-  processingCloseButton.disabled = true;
-  processingModal.hidden = false;
-}
-
-function closeProcessingModal() {
-  processingModal.hidden = true;
-  closeActivitiesModal();
-}
-
-function onProcessingClose() {
-  if (uploadInFlight) {
-    return;
-  }
-  resetCaptureSession();
-}
-
-function openActivitiesModal() {
-  activitiesModal.hidden = false;
-}
-
-function closeActivitiesModal() {
-  activitiesModal.hidden = true;
-}
-
-function resetCaptureSession() {
-  customerEmail = "";
-  emailInput.value = "";
-  emailError.textContent = "";
-  closeProcessingModal();
-  closeActivitiesModal();
   showGifPreview();
   captureStatus.textContent = "Tap Take Picture to start";
   resetCaptureButtonLabel();
-  readyForCapture = true;
   captureButton.disabled = false;
-  ensureCameraPlayback().catch((error) => console.error(error));
+  readyForCapture = true;
 }
 
 function onEmailConfirm() {
@@ -278,7 +145,7 @@ function onEmailConfirm() {
   }
 
   customerEmail = sanitized;
-  emailInput.value = "";
+  emailInput.value = sanitized;
   emailModal.hidden = true;
   startCountdown(captureDurationSeconds);
 }
@@ -304,7 +171,10 @@ function startCountdown(seconds) {
 function capturePhoto() {
   if (!cameraFeed.videoWidth || !cameraFeed.videoHeight) {
     captureStatus.textContent = "Camera is not ready. Try again.";
-    resetCaptureSession();
+    showGifPreview();
+    resetCaptureButtonLabel();
+    captureButton.disabled = false;
+    readyForCapture = true;
     return;
   }
 
@@ -318,12 +188,10 @@ function capturePhoto() {
 }
 
 async function sendPhoto(imageData, email) {
-  openProcessingModal();
-  captureStatus.textContent = "";
-  resetCaptureButtonLabel();
+  captureStatus.textContent = "Uploading...";
+  setCaptureButtonLabel(uploadingCaptureButtonLabel);
   const requestId = generateRequestId();
   const sanitizedEmail = sanitizeEmail(email);
-  uploadInFlight = true;
 
   try {
     const response = await fetch(saveCaptureEndpoint, {
@@ -341,36 +209,34 @@ async function sendPhoto(imageData, email) {
       throw new Error(payload?.error || `Upload failed (${response.status})`);
     }
 
-    processingMessage.textContent =
-      "Your photo update is complete. The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).";
-    processingCloseButton.disabled = false;
+    resultMessage.textContent =
+      "The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).";
+    resultModal.hidden = false;
     captureStatus.textContent = "Upload complete";
   } catch (error) {
     console.error(error);
-    processingMessage.textContent = `Error: ${error.message}`;
-    processingCloseButton.disabled = false;
+    resultMessage.textContent = `Error: ${error.message}`;
+    resultModal.hidden = false;
     captureStatus.textContent = "Upload failed";
   } finally {
-    uploadInFlight = false;
-    captureButton.disabled = true;
-    readyForCapture = false;
+    resetCaptureButtonLabel();
+    captureButton.disabled = false;
+    readyForCapture = true;
   }
 }
 
 function closeResultModal() {
   resultModal.hidden = true;
-  resetCaptureSession();
+  showGifPreview();
+  captureStatus.textContent = "Tap Take Picture to start";
+  resetCaptureButtonLabel();
 }
 
 window.addEventListener("beforeunload", () => {
-  stopCameraStream();
+  if (activeStream) {
+    activeStream.getTracks().forEach((track) => track.stop());
+  }
   if (countdownTimer) {
     clearInterval(countdownTimer);
-  }
-});
-
-document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) {
-    ensureCameraPlayback().catch((error) => console.error(error));
   }
 });
