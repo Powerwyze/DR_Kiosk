@@ -8,7 +8,8 @@ function buildFilename(email) {
   const normalized = String(email || "")
     .trim()
     .toLowerCase()
-    .replace(/[\[\]]/g, "");
+    .replace(/[\[\]\s]+/g, "")
+    .replace(/[<>:\"/\\|?*\x00-\x1f\x7f]/g, "");
   return normalized || "kiosk_capture";
 }
 
@@ -16,7 +17,7 @@ function normalizeEmail(email) {
   return String(email || "")
     .trim()
     .toLowerCase()
-    .replace(/[\[\]]/g, "");
+    .replace(/[\[\]\s]+/g, "");
 }
 
 function resolveUpstreamConfig() {
