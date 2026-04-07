@@ -23,6 +23,14 @@ const resultCloseButton = document.getElementById("result-close");
 const captureDurationSeconds = 5;
 const saveCaptureEndpoint = "/save-capture";
 const defaultCaptureButtonLabel = "Take Picture";
+const cameraConstraints = {
+  video: {
+    facingMode: "user",
+    width: { ideal: 1280 },
+    height: { ideal: 960 },
+  },
+  audio: false,
+};
 
 let activeStream = null;
 let countdownTimer = null;
@@ -89,19 +97,34 @@ function stopCameraStream() {
   cameraFeed.srcObject = null;
 }
 
+function hasLiveStream(stream) {
+  if (!stream || typeof stream.getVideoTracks !== "function") {
+    return false;
+  }
+  return stream.getVideoTracks().some((track) => track.readyState === "live");
+}
+
+async function createCameraStream() {
+  const stream = await navigator.mediaDevices.getUserMedia(cameraConstraints);
+  await trySetMinimumZoom(stream);
+  return stream;
+}
+
+async function attachCameraStream(newStream) {
+  const previousStream = activeStream;
+  activeStream = newStream;
+  cameraFeed.srcObject = newStream;
+  await cameraFeed.play();
+
+  if (previousStream && previousStream !== newStream) {
+    previousStream.getTracks().forEach((track) => track.stop());
+  }
+}
+
 async function startCamera() {
   try {
-    activeStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: "user",
-        width: { ideal: 1280 },
-        height: { ideal: 960 },
-      },
-      audio: false,
-    });
-    await trySetMinimumZoom(activeStream);
-    cameraFeed.srcObject = activeStream;
-    await cameraFeed.play();
+    const stream = await createCameraStream();
+    await attachCameraStream(stream);
     captureStatus.textContent = "Tap Take Picture to start";
     captureButton.disabled = false;
     resetCaptureButtonLabel();
@@ -118,8 +141,22 @@ async function refreshCameraStream() {
   }
 
   cameraRefreshPromise = (async () => {
-    stopCameraStream();
-    await startCamera();
+    try {
+      const newStream = await createCameraStream();
+      await attachCameraStream(newStream);
+      captureStatus.textContent = "Tap Take Picture to start";
+      captureButton.disabled = false;
+      resetCaptureButtonLabel();
+    } catch (error) {
+      console.error(error);
+      if (!hasLiveStream(activeStream)) {
+        captureStatus.textContent = "Camera access denied. Enable camera permissions.";
+        captureButton.disabled = true;
+      } else {
+        cameraFeed.srcObject = activeStream;
+        await cameraFeed.play().catch(() => {});
+      }
+    }
   })();
 
   try {
