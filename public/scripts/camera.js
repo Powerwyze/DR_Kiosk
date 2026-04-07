@@ -21,6 +21,7 @@ const defaultCaptureButtonLabel = "Take Picture";
 const uploadingCaptureButtonLabel = "Uploading...";
 const cameraReadyTimeoutMs = 5000;
 const cameraReadyPollMs = 120;
+const cameraRequestTimeoutMs = 7000;
 
 let activeStream = null;
 let countdownTimer = null;
@@ -131,19 +132,56 @@ function waitForCameraReady(timeoutMs = cameraReadyTimeoutMs) {
   });
 }
 
-async function startCamera() {
-  try {
-    cameraIsReady = false;
-    captureButton.disabled = true;
-    captureStatus.textContent = "Starting camera...";
-    activeStream = await navigator.mediaDevices.getUserMedia({
+function requestUserMediaWithTimeout(constraints, timeoutMs = cameraRequestTimeoutMs) {
+  return Promise.race([
+    navigator.mediaDevices.getUserMedia(constraints),
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Camera request timed out.")), timeoutMs);
+    }),
+  ]);
+}
+
+async function getCameraStream() {
+  const attempts = [
+    {
       video: {
         facingMode: "user",
         width: { ideal: 1280 },
         height: { ideal: 960 },
       },
       audio: false,
-    });
+    },
+    {
+      video: {
+        width: { ideal: 1280 },
+        height: { ideal: 960 },
+      },
+      audio: false,
+    },
+    {
+      video: true,
+      audio: false,
+    },
+  ];
+
+  let lastError = null;
+  for (const constraints of attempts) {
+    try {
+      return await requestUserMediaWithTimeout(constraints);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error("Unable to start camera.");
+}
+
+async function startCamera() {
+  try {
+    cameraIsReady = false;
+    captureButton.disabled = true;
+    captureStatus.textContent = "Starting camera...";
+    activeStream = await getCameraStream();
     await trySetMinimumZoom(activeStream);
     cameraFeed.srcObject = activeStream;
     cameraFeed.play().catch((error) => {
@@ -152,7 +190,7 @@ async function startCamera() {
     await waitForCameraReady();
   } catch (error) {
     console.error(error);
-    captureStatus.textContent = "Camera is taking longer than expected. Refresh permissions and try again.";
+    captureStatus.textContent = "Camera could not start. Check camera permissions and reload.";
     captureButton.disabled = true;
   }
 }
