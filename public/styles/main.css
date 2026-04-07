@@ -296,6 +296,12 @@ body {
   font-size: 0.95rem;
 }
 
+.result-message--updating {
+  font-size: 30pt;
+  line-height: 1.1;
+  text-align: center;
+}
+
 @media (min-width: 900px) {
   .camera-panel {
     width: min(34vw, 430px);

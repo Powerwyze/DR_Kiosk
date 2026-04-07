@@ -60,7 +60,7 @@ const translations = {
     cancel: "Cancel",
     uploadWaitingTitle: "Updating Photo",
     uploadWaitingMessage:
-      "We are turning you into this beautiful faceless doll. It takes a few minutes, but when it is done generating, we will send it to your email. Thank you so much.",
+      "Your picture has been taken, and it will show up in your email soon.",
     uploadDoneTitle: "Photo Sent",
     uploadDoneMessage:
       "The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).",
@@ -91,7 +91,7 @@ const translations = {
     cancel: "Cancelar",
     uploadWaitingTitle: "Actualizando Foto",
     uploadWaitingMessage:
-      "Te estamos convirtiendo en esta hermosa mu\u00f1eca sin rostro. Toma unos minutos, pero cuando termine de generarse, la enviaremos a tu correo. Muchas gracias.",
+      "Tu foto ya fue tomada y aparecer\u00e1 en tu correo pronto.",
     uploadDoneTitle: "Foto Enviada",
     uploadDoneMessage:
       "La foto aparecer\u00e1 en tu correo en 3 a 5 minutos (revisa tu spam si no la ves).",
@@ -162,6 +162,7 @@ function hideGifPreview() {
 function showUploadPopup(title, message, canClose) {
   resultTitle.textContent = title;
   resultMessage.textContent = message;
+  resultMessage.classList.toggle("result-message--updating", !canClose);
   resultCloseButton.hidden = !canClose;
   resultCloseButton.disabled = !canClose;
   resultModal.hidden = false;
