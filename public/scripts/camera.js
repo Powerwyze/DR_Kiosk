@@ -86,15 +86,16 @@ function isValidEmail(email) {
 
 async function startCamera() {
   try {
-    debugEvent("camera.request.start", { idealWidth: 1080, idealHeight: 1920 });
+    debugEvent("camera.request.start", { idealWidth: 1280, idealHeight: 960, facingMode: "user" });
     activeStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: "user",
-        width: { ideal: 1080 },
-        height: { ideal: 1920 }
+        width: { ideal: 1280 },
+        height: { ideal: 960 }
       },
       audio: false,
     });
+    await trySetMinimumZoom(activeStream);
     cameraFeed.srcObject = activeStream;
     await cameraFeed.play();
     debugEvent("camera.request.success", {
@@ -108,6 +109,23 @@ async function startCamera() {
     debugEvent("camera.request.error", { message: error?.message || String(error) });
     captureStatus.textContent = "Camera access denied. Enable camera permissions.";
     captureButton.disabled = true;
+  }
+}
+
+async function trySetMinimumZoom(stream) {
+  try {
+    const [track] = stream.getVideoTracks();
+    if (!track || typeof track.getCapabilities !== "function") {
+      return;
+    }
+
+    const capabilities = track.getCapabilities();
+    if (capabilities && typeof capabilities.zoom === "object" && typeof capabilities.zoom.min === "number") {
+      await track.applyConstraints({ advanced: [{ zoom: capabilities.zoom.min }] });
+      debugEvent("camera.zoom.applied", { zoom: capabilities.zoom.min });
+    }
+  } catch (error) {
+    debugEvent("camera.zoom.skip", { message: error?.message || String(error) });
   }
 }
 
