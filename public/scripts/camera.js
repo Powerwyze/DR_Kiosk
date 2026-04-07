@@ -58,7 +58,7 @@ const translations = {
     cancel: "Cancel",
     uploadWaitingTitle: "Updating Photo",
     uploadWaitingMessage:
-      "We are updating your photo and will email you shortly. While you wait, checkout some fun activities to do in Dominican Republic.",
+      "We are turning you into this beautiful faceless doll. It takes a few minutes, but when it is done generating, we will send it to your email. Thank you so much.",
     uploadDoneTitle: "Photo Sent",
     uploadDoneMessage:
       "The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).",
@@ -88,7 +88,7 @@ const translations = {
     cancel: "Cancelar",
     uploadWaitingTitle: "Actualizando Foto",
     uploadWaitingMessage:
-      "Estamos actualizando tu foto y te la enviaremos por correo en breve. Mientras esperas, mira algunas actividades divertidas para hacer en República Dominicana.",
+      "Te estamos convirtiendo en esta hermosa muñeca sin rostro. Toma unos minutos, pero cuando termine de generarse, la enviaremos a tu correo. Muchas gracias.",
     uploadDoneTitle: "Foto Enviada",
     uploadDoneMessage:
       "La foto aparecerá en tu correo en 3 a 5 minutos (revisa tu spam si no la ves).",
