@@ -3,7 +3,19 @@ const DEFAULT_TRIGGER_API_KEY = "NeEkkkzAzF5JJpI1kqNJ71dAqvnxku531If8slLs";
 const DEFAULT_API_KEY_HEADER = "x-api-key";
 const DEFAULT_API_WAIT_HEADER = "x-api-wait";
 const DEFAULT_API_WAIT_VALUE = "true";
+const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini";
+const OPENAI_API_URL = "https://api.openai.com/v1/responses";
 const DEBUG_ENV_FLAG = "DEBUG_UPLOADS";
+const FALLBACK_STYLE_LINES = [
+  "Your outfit looks vibrant and camera-ready, with a confident style that really stands out.",
+  "Your look is polished and expressive, and your color choices make the photo pop.",
+  "You are wearing a sharp, fun look that feels perfect for this Dominican Republic moment.",
+];
+const FALLBACK_ACTIVITY_LINES = [
+  "For fun in the Dominican Republic, take a sunset stroll through the Colonial Zone in Santo Domingo.",
+  "For fun in the Dominican Republic, dance to live merengue at a local night spot.",
+  "For fun in the Dominican Republic, visit a beach in Puerto Plata and try fresh local food after.",
+];
 
 function buildFilename(email) {
   const normalized = String(email || "")
@@ -74,6 +86,103 @@ function logEvent(requestId, label, details) {
   console.info(`[DR_UPLOAD] ${JSON.stringify(payload)}`);
 }
 
+function pickRandom(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return "";
+  }
+  const index = Math.floor(Math.random() * items.length);
+  return items[index];
+}
+
+function buildFallbackStyleMessage() {
+  return `${pickRandom(FALLBACK_STYLE_LINES)} ${pickRandom(FALLBACK_ACTIVITY_LINES)}`.trim();
+}
+
+function extractResponseText(responsePayload) {
+  if (typeof responsePayload?.output_text === "string" && responsePayload.output_text.trim()) {
+    return responsePayload.output_text.trim();
+  }
+
+  const outputItems = Array.isArray(responsePayload?.output) ? responsePayload.output : [];
+  const chunks = [];
+  for (const item of outputItems) {
+    const contentItems = Array.isArray(item?.content) ? item.content : [];
+    for (const contentItem of contentItems) {
+      if (typeof contentItem?.text === "string" && contentItem.text.trim()) {
+        chunks.push(contentItem.text.trim());
+      }
+    }
+  }
+
+  return chunks.join(" ").trim();
+}
+
+async function generateStyleMessage(imageData, requestId) {
+  const openAiKey = String(process.env.OPENAI_API_KEY || "").trim();
+  const openAiModel = String(process.env.OPENAI_VISION_MODEL || DEFAULT_OPENAI_MODEL).trim() || DEFAULT_OPENAI_MODEL;
+
+  if (!openAiKey) {
+    logEvent(requestId, "style.fallback.no_key", {});
+    return { message: buildFallbackStyleMessage(), source: "fallback_no_key" };
+  }
+
+  try {
+    const response = await fetch(OPENAI_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openAiKey}`,
+      },
+      body: JSON.stringify({
+        model: openAiModel,
+        max_output_tokens: 120,
+        temperature: 0.8,
+        input: [
+          {
+            role: "system",
+            content: [
+              {
+                type: "input_text",
+                text: "You write upbeat, short kiosk messages for visitors in the Dominican Republic.",
+              },
+            ],
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: "From this photo, write exactly 2 short sentences. Sentence 1: compliment what the person is wearing. Sentence 2: suggest one fun activity to do in the Dominican Republic. Keep it positive, specific, and concise.",
+              },
+              {
+                type: "input_image",
+                image_url: imageData,
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI returned ${response.status}`);
+    }
+
+    const responsePayload = await response.json();
+    const text = extractResponseText(responsePayload);
+    if (!text) {
+      throw new Error("OpenAI response was empty");
+    }
+
+    return { message: text, source: "openai" };
+  } catch (error) {
+    logEvent(requestId, "style.fallback.error", {
+      message: error?.message || String(error),
+    });
+    return { message: buildFallbackStyleMessage(), source: "fallback_error" };
+  }
+}
+
 module.exports = async function handler(req, res) {
   const requestId = getRequestId(req);
   const debugEnabled = isDebugEnabled(req);
@@ -113,17 +222,24 @@ module.exports = async function handler(req, res) {
     };
 
     const { upstreamUrl, headers } = resolveUpstreamConfig();
-    const upstreamResponse = await fetch(upstreamUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-    });
+    const [upstreamResponse, styleResult] = await Promise.all([
+      fetch(upstreamUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      }),
+      generateStyleMessage(imageData, requestId),
+    ]);
 
     const responseText = await upstreamResponse.text();
     logEvent(requestId, "upstream.response", {
       status: upstreamResponse.status,
       ok: upstreamResponse.ok,
       durationMs: Date.now() - startedAt,
+    });
+    logEvent(requestId, "style.message.ready", {
+      source: styleResult.source,
+      hasMessage: Boolean(styleResult.message),
     });
 
     if (!upstreamResponse.ok) {
@@ -142,6 +258,8 @@ module.exports = async function handler(req, res) {
       requestId,
       email,
       fileName,
+      styleMessage: styleResult.message,
+      styleSource: styleResult.source,
       upstreamResponse: {
         ...parsed,
         upstreamUrl,

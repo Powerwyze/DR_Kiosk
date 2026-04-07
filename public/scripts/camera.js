@@ -19,11 +19,13 @@ const captureDurationSeconds = 5;
 const saveCaptureEndpoint = "/save-capture";
 const defaultCaptureButtonLabel = "Take Picture";
 const uploadingCaptureButtonLabel = "Uploading...";
+const tourismWebsiteUrl = "https://godominicanrepublic.com";
 
 let activeStream = null;
 let countdownTimer = null;
 let readyForCapture = true;
 let customerEmail = "";
+let openTourismWebsiteOnClose = false;
 
 startCamera();
 
@@ -59,6 +61,19 @@ function setCaptureButtonLabel(label) {
 
 function resetCaptureButtonLabel() {
   setCaptureButtonLabel(defaultCaptureButtonLabel);
+}
+
+function buildPopupMessage(payload) {
+  const styleMessage = String(payload?.styleMessage || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const deliveryMessage = "Your image will be sent to your email soon in a few minutes.";
+
+  if (styleMessage) {
+    return `${styleMessage} ${deliveryMessage}`;
+  }
+
+  return `Your look is stylish and full of personality. For fun in the Dominican Republic, visit the Colonial Zone for music, food, and history. ${deliveryMessage}`;
 }
 
 function showGifPreview() {
@@ -209,13 +224,14 @@ async function sendPhoto(imageData, email) {
       throw new Error(payload?.error || `Upload failed (${response.status})`);
     }
 
-    resultMessage.textContent =
-      "The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).";
+    resultMessage.textContent = buildPopupMessage(payload);
+    openTourismWebsiteOnClose = true;
     resultModal.hidden = false;
     captureStatus.textContent = "Upload complete";
   } catch (error) {
     console.error(error);
     resultMessage.textContent = `Error: ${error.message}`;
+    openTourismWebsiteOnClose = false;
     resultModal.hidden = false;
     captureStatus.textContent = "Upload failed";
   } finally {
@@ -226,10 +242,14 @@ async function sendPhoto(imageData, email) {
 }
 
 function closeResultModal() {
+  if (openTourismWebsiteOnClose) {
+    window.open(tourismWebsiteUrl, "_blank", "noopener,noreferrer");
+  }
   resultModal.hidden = true;
   showGifPreview();
   captureStatus.textContent = "Tap Take Picture to start";
   resetCaptureButtonLabel();
+  openTourismWebsiteOnClose = false;
 }
 
 window.addEventListener("beforeunload", () => {
