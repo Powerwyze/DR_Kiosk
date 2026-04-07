@@ -19,11 +19,13 @@ const captureDurationSeconds = 5;
 const saveCaptureEndpoint = "/save-capture";
 const defaultCaptureButtonLabel = "Take Picture";
 const uploadingCaptureButtonLabel = "Uploading...";
+const cameraReadyTimeoutMs = 5000;
 
 let activeStream = null;
 let countdownTimer = null;
 let readyForCapture = true;
 let customerEmail = "";
+let cameraIsReady = false;
 
 startCamera();
 
@@ -73,8 +75,53 @@ function hideGifPreview() {
   }
 }
 
+function hasUsableVideoFrame() {
+  return Boolean(cameraFeed.videoWidth && cameraFeed.videoHeight && cameraFeed.readyState >= 2);
+}
+
+function waitForCameraReady(timeoutMs = cameraReadyTimeoutMs) {
+  if (hasUsableVideoFrame()) {
+    cameraIsReady = true;
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    let timeoutId = null;
+
+    const cleanup = () => {
+      cameraFeed.removeEventListener("loadedmetadata", onReady);
+      cameraFeed.removeEventListener("canplay", onReady);
+      cameraFeed.removeEventListener("playing", onReady);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+
+    const onReady = () => {
+      if (!hasUsableVideoFrame()) {
+        return;
+      }
+      cleanup();
+      cameraIsReady = true;
+      resolve();
+    };
+
+    timeoutId = setTimeout(() => {
+      cleanup();
+      reject(new Error("Camera feed did not become ready in time."));
+    }, timeoutMs);
+
+    cameraFeed.addEventListener("loadedmetadata", onReady);
+    cameraFeed.addEventListener("canplay", onReady);
+    cameraFeed.addEventListener("playing", onReady);
+  });
+}
+
 async function startCamera() {
   try {
+    cameraIsReady = false;
+    captureButton.disabled = true;
+    captureStatus.textContent = "Starting camera...";
     activeStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: "user",
@@ -86,7 +133,9 @@ async function startCamera() {
     await trySetMinimumZoom(activeStream);
     cameraFeed.srcObject = activeStream;
     await cameraFeed.play();
+    await waitForCameraReady();
     captureStatus.textContent = "Tap Take Picture to start";
+    captureButton.disabled = false;
     resetCaptureButtonLabel();
   } catch (error) {
     console.error(error);
@@ -168,14 +217,20 @@ function startCountdown(seconds) {
   }, 1000);
 }
 
-function capturePhoto() {
-  if (!cameraFeed.videoWidth || !cameraFeed.videoHeight) {
-    captureStatus.textContent = "Camera is not ready. Try again.";
-    showGifPreview();
-    resetCaptureButtonLabel();
-    captureButton.disabled = false;
-    readyForCapture = true;
-    return;
+async function capturePhoto() {
+  if (!cameraIsReady || !hasUsableVideoFrame()) {
+    captureStatus.textContent = "Finalizing camera...";
+    try {
+      await waitForCameraReady(3000);
+    } catch (error) {
+      console.error(error);
+      captureStatus.textContent = "Camera is not ready. Try again.";
+      showGifPreview();
+      resetCaptureButtonLabel();
+      captureButton.disabled = false;
+      readyForCapture = true;
+      return;
+    }
   }
 
   const context = canvas.getContext("2d");
@@ -230,6 +285,9 @@ function closeResultModal() {
   showGifPreview();
   captureStatus.textContent = "Tap Take Picture to start";
   resetCaptureButtonLabel();
+  if (activeStream) {
+    cameraFeed.play().catch(() => {});
+  }
 }
 
 window.addEventListener("beforeunload", () => {
