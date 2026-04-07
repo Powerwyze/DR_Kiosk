@@ -1,70 +1,13 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
-    }
-  ],
   "rewrites": [
     {
       "source": "/save-capture",
-      "destination": "/api/save-capture.py"
+      "destination": "/api/save-capture.js"
     },
     {
       "source": "/(.*)",
       "destination": "/public/$1"
-    }
-  ],
-  "redirects": [
-    {
-      "source": "/camera.html",
-      "destination": "/",
-      "permanent": false
-    },
-    {
-      "source": "/index-v2.html",
-      "destination": "/",
-      "permanent": false
-    },
-    {
-      "source": "/talking-mimosa.html",
-      "destination": "/",
-      "permanent": false
-    },
-    {
-      "source": "/company-discover.html",
-      "destination": "/",
-      "permanent": false
-    },
-    {
-      "source": "/can.html",
-      "destination": "/",
-      "permanent": false
-    },
-    {
-      "source": "/can-peach.html",
-      "destination": "/",
-      "permanent": false
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Permissions-Policy",
-          "value": "camera=*, microphone=*, geolocation=*"
-        },
-        {
-          "key": "Feature-Policy",
-          "value": "camera *; microphone *; geolocation *"
-        }
-      ]
     }
   ]
 }
