@@ -12,6 +12,8 @@ const emailEnterButton = document.getElementById("email-enter");
 const emailCancelButton = document.getElementById("email-cancel");
 
 const processingModal = document.getElementById("processing-modal");
+const processingMessage = document.getElementById("processing-message");
+const processingCloseButton = document.getElementById("processing-close");
 const activitiesOpenButton = document.getElementById("activities-open");
 const activitiesModal = document.getElementById("activities-modal");
 const activitiesCloseButton = document.getElementById("activities-close");
@@ -37,6 +39,7 @@ let countdownTimer = null;
 let readyForCapture = true;
 let customerEmail = "";
 let cameraRefreshPromise = null;
+let uploadInFlight = false;
 
 startCamera();
 
@@ -45,6 +48,7 @@ emailEnterButton.addEventListener("click", onEmailConfirm);
 emailCancelButton.addEventListener("click", closeEmailModal);
 activitiesOpenButton.addEventListener("click", openActivitiesModal);
 activitiesCloseButton.addEventListener("click", closeActivitiesModal);
+processingCloseButton.addEventListener("click", onProcessingClose);
 resultCloseButton.addEventListener("click", closeResultModal);
 emailInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -205,12 +209,22 @@ function closeEmailModal() {
 }
 
 function openProcessingModal() {
+  processingMessage.textContent =
+    "We are updating your photo and will email you shortly. While you wait, checkout some fun activities to do in Dominican Republic.";
+  processingCloseButton.disabled = true;
   processingModal.hidden = false;
 }
 
 function closeProcessingModal() {
   processingModal.hidden = true;
   closeActivitiesModal();
+}
+
+function onProcessingClose() {
+  if (uploadInFlight) {
+    return;
+  }
+  resetCaptureSession();
 }
 
 function openActivitiesModal() {
@@ -288,6 +302,7 @@ async function sendPhoto(imageData, email) {
   resetCaptureButtonLabel();
   const requestId = generateRequestId();
   const sanitizedEmail = sanitizeEmail(email);
+  uploadInFlight = true;
 
   try {
     const response = await fetch(saveCaptureEndpoint, {
@@ -305,20 +320,19 @@ async function sendPhoto(imageData, email) {
       throw new Error(payload?.error || `Upload failed (${response.status})`);
     }
 
-    closeProcessingModal();
-    resultMessage.textContent =
-      "The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).";
-    resultModal.hidden = false;
+    processingMessage.textContent =
+      "Your photo update is complete. The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).";
+    processingCloseButton.disabled = false;
     captureStatus.textContent = "Upload complete";
   } catch (error) {
     console.error(error);
-    closeProcessingModal();
-    resultMessage.textContent = `Error: ${error.message}`;
-    resultModal.hidden = false;
+    processingMessage.textContent = `Error: ${error.message}`;
+    processingCloseButton.disabled = false;
     captureStatus.textContent = "Upload failed";
   } finally {
-    captureButton.disabled = false;
-    readyForCapture = true;
+    uploadInFlight = false;
+    captureButton.disabled = true;
+    readyForCapture = false;
   }
 }
 
