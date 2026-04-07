@@ -5,7 +5,18 @@ const DEFAULT_API_WAIT_HEADER = "x-api-wait";
 const DEFAULT_API_WAIT_VALUE = "true";
 
 function buildFilename(email) {
-  return String(email || "").trim().toLowerCase() || "kiosk_capture";
+  const normalized = String(email || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\[\]]/g, "");
+  return normalized || "kiosk_capture";
+}
+
+function normalizeEmail(email) {
+  return String(email || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\[\]]/g, "");
 }
 
 function resolveUpstreamConfig() {
@@ -48,7 +59,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const imageData = req.body?.imageData;
-    const email = String(req.body?.email || "").trim();
+    const email = normalizeEmail(req.body?.email);
 
     if (!imageData) {
       throw new Error("Missing imageData");

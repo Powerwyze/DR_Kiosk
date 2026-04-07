@@ -17,9 +17,7 @@ const caricatureCloseButton = document.getElementById("caricature-close");
 
 const captureDuration = 5;
 const saveCaptureEndpoint = "/save-capture";
-const caricatureResultEndpoint = "/caricature-result";
-const pollDelayMs = 1500;
-const pollAttemptsMax = 90;
+const defaultCaricatureImageSrc = "assets/reference.jpg";
 
 let activeStream = null;
 let countdownId = null;
@@ -171,8 +169,8 @@ function startCaptureFlow() {
 function showCaricatureModal(message) {
   caricatureMessage.textContent = message || "WE ARE EMAILING YOU NOW";
   caricatureTitle.textContent = "Processing your image";
+  caricatureImage.src = defaultCaricatureImageSrc;
   caricatureImage.hidden = true;
-  caricatureImage.src = "";
   caricatureLoader.hidden = false;
   caricatureModal.hidden = false;
 }
@@ -235,41 +233,6 @@ function capturePhoto() {
   sendPhotoToServer(dataUrl, customerEmail);
 }
 
-async function waitForCaricatureResult(jobId) {
-  for (let attempt = 0; attempt < pollAttemptsMax; attempt += 1) {
-    const response = await fetch(
-      `${caricatureResultEndpoint}?job_id=${encodeURIComponent(jobId)}`,
-    );
-
-    if (!response.ok) {
-      throw new Error(`Result service returned ${response.status}`);
-    }
-
-    const payload = await response.json();
-    if (payload?.status === "ready" && payload.imageData) {
-      return payload;
-    }
-
-    if (payload?.status === "failed") {
-      throw new Error(payload.error || "Failed to generate caricature.");
-    }
-
-    if (attempt === 0) {
-      caricatureMessage.textContent = "WE ARE EMAILING YOU NOW";
-    } else if (attempt % 10 === 0) {
-      caricatureMessage.textContent = "WE ARE EMAILING YOU NOW";
-    }
-
-    await delay(pollDelayMs);
-  }
-
-  throw new Error("Timed out waiting for caricature generation.");
-}
-
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 async function sendPhotoToServer(dataUrl, email) {
   statusText.textContent = "Sending photo...";
   setStatusBusy();
@@ -296,7 +259,8 @@ async function sendPhotoToServer(dataUrl, email) {
     caricatureLoader.hidden = true;
     caricatureTitle.textContent = "Photo sent successfully!";
     caricatureMessage.textContent = "Your photo has been sent to " + email;
-    caricatureImage.hidden = true;
+    caricatureImage.src = defaultCaricatureImageSrc;
+    caricatureImage.hidden = false;
   } catch (error) {
     console.error(error);
     caricatureLoader.hidden = true;
