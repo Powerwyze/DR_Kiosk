@@ -19,13 +19,11 @@ const captureDurationSeconds = 5;
 const saveCaptureEndpoint = "/save-capture";
 const defaultCaptureButtonLabel = "Take Picture";
 const uploadingCaptureButtonLabel = "Uploading...";
-const tourismWebsiteUrl = "https://godominicanrepublic.com";
 
 let activeStream = null;
 let countdownTimer = null;
 let readyForCapture = true;
 let customerEmail = "";
-let openTourismWebsiteOnClose = false;
 
 startCamera();
 
@@ -225,13 +223,11 @@ async function sendPhoto(imageData, email) {
     }
 
     resultMessage.textContent = buildPopupMessage(payload);
-    openTourismWebsiteOnClose = true;
     resultModal.hidden = false;
     captureStatus.textContent = "Upload complete";
   } catch (error) {
     console.error(error);
     resultMessage.textContent = `Error: ${error.message}`;
-    openTourismWebsiteOnClose = false;
     resultModal.hidden = false;
     captureStatus.textContent = "Upload failed";
   } finally {
@@ -242,14 +238,10 @@ async function sendPhoto(imageData, email) {
 }
 
 function closeResultModal() {
-  if (openTourismWebsiteOnClose) {
-    window.open(tourismWebsiteUrl, "_blank", "noopener,noreferrer");
-  }
   resultModal.hidden = true;
   showGifPreview();
   captureStatus.textContent = "Tap Take Picture to start";
   resetCaptureButtonLabel();
-  openTourismWebsiteOnClose = false;
 }
 
 window.addEventListener("beforeunload", () => {

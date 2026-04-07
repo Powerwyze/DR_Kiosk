@@ -7,14 +7,14 @@ const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini";
 const OPENAI_API_URL = "https://api.openai.com/v1/responses";
 const DEBUG_ENV_FLAG = "DEBUG_UPLOADS";
 const FALLBACK_STYLE_LINES = [
-  "Your outfit looks vibrant and camera-ready, with a confident style that really stands out.",
-  "Your look is polished and expressive, and your color choices make the photo pop.",
-  "You are wearing a sharp, fun look that feels perfect for this Dominican Republic moment.",
+  "Your outfit has great detail and personality, and your color combination makes your look feel stylish and confident.",
+  "Your look is polished and expressive, with a strong outfit choice that feels both modern and fun.",
+  "Your clothing style is bold and camera-ready, and the way your look comes together feels unique and full of energy.",
 ];
 const FALLBACK_ACTIVITY_LINES = [
-  "For fun in the Dominican Republic, take a sunset stroll through the Colonial Zone in Santo Domingo.",
-  "For fun in the Dominican Republic, dance to live merengue at a local night spot.",
-  "For fun in the Dominican Republic, visit a beach in Puerto Plata and try fresh local food after.",
+  "That stylish look would fit perfectly for a sunset walk and photos in the Colonial Zone of Santo Domingo.",
+  "With that energetic style, you would have a great time dancing merengue or bachata at a live local venue.",
+  "Your vibrant look is perfect for a beach day in Puerto Plata followed by fresh Dominican seafood nearby.",
 ];
 
 function buildFilename(email) {
@@ -135,7 +135,7 @@ async function generateStyleMessage(imageData, requestId) {
       },
       body: JSON.stringify({
         model: openAiModel,
-        max_output_tokens: 120,
+        max_output_tokens: 180,
         temperature: 0.8,
         input: [
           {
@@ -143,7 +143,7 @@ async function generateStyleMessage(imageData, requestId) {
             content: [
               {
                 type: "input_text",
-                text: "You write upbeat, short kiosk messages for visitors in the Dominican Republic.",
+                text: "You write upbeat kiosk messages for visitors in the Dominican Republic. Focus on visual clothing details and tie them to a matching activity recommendation.",
               },
             ],
           },
@@ -152,7 +152,7 @@ async function generateStyleMessage(imageData, requestId) {
             content: [
               {
                 type: "input_text",
-                text: "From this photo, write exactly 2 short sentences. Sentence 1: compliment what the person is wearing. Sentence 2: suggest one fun activity to do in the Dominican Republic. Keep it positive, specific, and concise.",
+                text: "From this photo, write exactly 2 sentences in English. Sentence 1 must give a detailed compliment about what the person is wearing (colors, style, outfit vibe). Sentence 2 must recommend one fun thing to do in the Dominican Republic that matches their style in sentence 1. Keep it friendly and specific, avoid generic phrasing, and do not mention uncertainty.",
               },
               {
                 type: "input_image",
