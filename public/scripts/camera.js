@@ -11,6 +11,11 @@ const emailError = document.getElementById("email-error");
 const emailEnterButton = document.getElementById("email-enter");
 const emailCancelButton = document.getElementById("email-cancel");
 
+const processingModal = document.getElementById("processing-modal");
+const activitiesOpenButton = document.getElementById("activities-open");
+const activitiesModal = document.getElementById("activities-modal");
+const activitiesCloseButton = document.getElementById("activities-close");
+
 const resultModal = document.getElementById("result-modal");
 const resultMessage = document.getElementById("result-message");
 const resultCloseButton = document.getElementById("result-close");
@@ -18,18 +23,20 @@ const resultCloseButton = document.getElementById("result-close");
 const captureDurationSeconds = 5;
 const saveCaptureEndpoint = "/save-capture";
 const defaultCaptureButtonLabel = "Take Picture";
-const uploadingCaptureButtonLabel = "Uploading...";
 
 let activeStream = null;
 let countdownTimer = null;
 let readyForCapture = true;
 let customerEmail = "";
+let cameraRefreshPromise = null;
 
 startCamera();
 
 captureButton.addEventListener("click", onCaptureClick);
 emailEnterButton.addEventListener("click", onEmailConfirm);
 emailCancelButton.addEventListener("click", closeEmailModal);
+activitiesOpenButton.addEventListener("click", openActivitiesModal);
+activitiesCloseButton.addEventListener("click", closeActivitiesModal);
 resultCloseButton.addEventListener("click", closeResultModal);
 emailInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -73,6 +80,15 @@ function hideGifPreview() {
   }
 }
 
+function stopCameraStream() {
+  if (!activeStream) {
+    return;
+  }
+  activeStream.getTracks().forEach((track) => track.stop());
+  activeStream = null;
+  cameraFeed.srcObject = null;
+}
+
 async function startCamera() {
   try {
     activeStream = await navigator.mediaDevices.getUserMedia({
@@ -87,11 +103,29 @@ async function startCamera() {
     cameraFeed.srcObject = activeStream;
     await cameraFeed.play();
     captureStatus.textContent = "Tap Take Picture to start";
+    captureButton.disabled = false;
     resetCaptureButtonLabel();
   } catch (error) {
     console.error(error);
     captureStatus.textContent = "Camera access denied. Enable camera permissions.";
     captureButton.disabled = true;
+  }
+}
+
+async function refreshCameraStream() {
+  if (cameraRefreshPromise) {
+    return cameraRefreshPromise;
+  }
+
+  cameraRefreshPromise = (async () => {
+    stopCameraStream();
+    await startCamera();
+  })();
+
+  try {
+    await cameraRefreshPromise;
+  } finally {
+    cameraRefreshPromise = null;
   }
 }
 
@@ -123,18 +157,45 @@ function onCaptureClick() {
 
 function openEmailModal() {
   emailError.textContent = "";
-  emailInput.value = customerEmail;
+  emailInput.value = "";
   emailModal.hidden = false;
   emailInput.focus({ preventScroll: true });
 }
 
 function closeEmailModal() {
   emailModal.hidden = true;
+  resetCaptureSession();
+}
+
+function openProcessingModal() {
+  processingModal.hidden = false;
+}
+
+function closeProcessingModal() {
+  processingModal.hidden = true;
+  closeActivitiesModal();
+}
+
+function openActivitiesModal() {
+  activitiesModal.hidden = false;
+}
+
+function closeActivitiesModal() {
+  activitiesModal.hidden = true;
+}
+
+function resetCaptureSession() {
+  customerEmail = "";
+  emailInput.value = "";
+  emailError.textContent = "";
+  closeProcessingModal();
+  closeActivitiesModal();
   showGifPreview();
   captureStatus.textContent = "Tap Take Picture to start";
   resetCaptureButtonLabel();
-  captureButton.disabled = false;
   readyForCapture = true;
+  captureButton.disabled = false;
+  refreshCameraStream().catch((error) => console.error(error));
 }
 
 function onEmailConfirm() {
@@ -145,7 +206,7 @@ function onEmailConfirm() {
   }
 
   customerEmail = sanitized;
-  emailInput.value = sanitized;
+  emailInput.value = "";
   emailModal.hidden = true;
   startCountdown(captureDurationSeconds);
 }
@@ -171,10 +232,7 @@ function startCountdown(seconds) {
 function capturePhoto() {
   if (!cameraFeed.videoWidth || !cameraFeed.videoHeight) {
     captureStatus.textContent = "Camera is not ready. Try again.";
-    showGifPreview();
-    resetCaptureButtonLabel();
-    captureButton.disabled = false;
-    readyForCapture = true;
+    resetCaptureSession();
     return;
   }
 
@@ -188,8 +246,9 @@ function capturePhoto() {
 }
 
 async function sendPhoto(imageData, email) {
-  captureStatus.textContent = "Uploading...";
-  setCaptureButtonLabel(uploadingCaptureButtonLabel);
+  openProcessingModal();
+  captureStatus.textContent = "";
+  resetCaptureButtonLabel();
   const requestId = generateRequestId();
   const sanitizedEmail = sanitizeEmail(email);
 
@@ -209,17 +268,18 @@ async function sendPhoto(imageData, email) {
       throw new Error(payload?.error || `Upload failed (${response.status})`);
     }
 
+    closeProcessingModal();
     resultMessage.textContent =
       "The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).";
     resultModal.hidden = false;
     captureStatus.textContent = "Upload complete";
   } catch (error) {
     console.error(error);
+    closeProcessingModal();
     resultMessage.textContent = `Error: ${error.message}`;
     resultModal.hidden = false;
     captureStatus.textContent = "Upload failed";
   } finally {
-    resetCaptureButtonLabel();
     captureButton.disabled = false;
     readyForCapture = true;
   }
@@ -227,15 +287,11 @@ async function sendPhoto(imageData, email) {
 
 function closeResultModal() {
   resultModal.hidden = true;
-  showGifPreview();
-  captureStatus.textContent = "Tap Take Picture to start";
-  resetCaptureButtonLabel();
+  resetCaptureSession();
 }
 
 window.addEventListener("beforeunload", () => {
-  if (activeStream) {
-    activeStream.getTracks().forEach((track) => track.stop());
-  }
+  stopCameraStream();
   if (countdownTimer) {
     clearInterval(countdownTimer);
   }
