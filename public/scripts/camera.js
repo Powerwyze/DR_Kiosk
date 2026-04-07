@@ -12,8 +12,12 @@ const emailEnterButton = document.getElementById("email-enter");
 const emailCancelButton = document.getElementById("email-cancel");
 
 const resultModal = document.getElementById("result-modal");
+const resultTitle = document.getElementById("result-title");
 const resultMessage = document.getElementById("result-message");
+const resultActivitiesButton = document.getElementById("result-activities");
 const resultCloseButton = document.getElementById("result-close");
+const activitiesModal = document.getElementById("activities-modal");
+const activitiesCloseButton = document.getElementById("activities-close");
 
 const captureDurationSeconds = 5;
 const saveCaptureEndpoint = "/save-capture";
@@ -30,6 +34,8 @@ startCamera();
 captureButton.addEventListener("click", onCaptureClick);
 emailEnterButton.addEventListener("click", onEmailConfirm);
 emailCancelButton.addEventListener("click", closeEmailModal);
+resultActivitiesButton.addEventListener("click", openActivitiesModal);
+activitiesCloseButton.addEventListener("click", closeActivitiesModal);
 resultCloseButton.addEventListener("click", closeResultModal);
 emailInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -71,6 +77,21 @@ function hideGifPreview() {
   if (viewfinderGif) {
     viewfinderGif.classList.add("is-hidden");
   }
+}
+
+function showUploadPopup(title, message, canClose) {
+  resultTitle.textContent = title;
+  resultMessage.textContent = message;
+  resultCloseButton.disabled = !canClose;
+  resultModal.hidden = false;
+}
+
+function openActivitiesModal() {
+  activitiesModal.hidden = false;
+}
+
+function closeActivitiesModal() {
+  activitiesModal.hidden = true;
 }
 
 function getVideoDevices() {
@@ -254,8 +275,13 @@ function capturePhoto() {
 }
 
 async function sendPhoto(imageData, email) {
-  captureStatus.textContent = "Uploading...";
-  setCaptureButtonLabel(uploadingCaptureButtonLabel);
+  captureStatus.textContent = "";
+  resetCaptureButtonLabel();
+  showUploadPopup(
+    "Updating Photo",
+    "We are updating your photo and will email you shortly. While you wait, checkout some fun activities to do in Dominican Republic.",
+    false,
+  );
   const requestId = generateRequestId();
   const sanitizedEmail = sanitizeEmail(email);
 
@@ -275,27 +301,31 @@ async function sendPhoto(imageData, email) {
       throw new Error(payload?.error || `Upload failed (${response.status})`);
     }
 
-    resultMessage.textContent =
-      "The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).";
-    resultModal.hidden = false;
+    showUploadPopup(
+      "Photo Sent",
+      "The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).",
+      true,
+    );
     captureStatus.textContent = "Upload complete";
   } catch (error) {
     console.error(error);
-    resultMessage.textContent = `Error: ${error.message}`;
-    resultModal.hidden = false;
+    showUploadPopup("Unable To Send Photo", `Error: ${error.message}`, true);
     captureStatus.textContent = "Upload failed";
   } finally {
     resetCaptureButtonLabel();
-    captureButton.disabled = false;
-    readyForCapture = true;
+    captureButton.disabled = true;
+    readyForCapture = false;
   }
 }
 
 function closeResultModal() {
+  closeActivitiesModal();
   resultModal.hidden = true;
   showGifPreview();
   captureStatus.textContent = "Tap Take Picture to start";
   resetCaptureButtonLabel();
+  captureButton.disabled = false;
+  readyForCapture = true;
 }
 
 window.addEventListener("beforeunload", () => {

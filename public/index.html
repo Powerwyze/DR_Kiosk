@@ -53,11 +53,31 @@
 
     <div id="result-modal" class="modal" hidden>
       <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="result-title">
-        <h2 id="result-title">Photo Sent</h2>
+        <h2 id="result-title">Updating Photo</h2>
         <p id="result-message" class="result-message">
-          The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).
+          We are updating your photo and will email you shortly. While you wait, checkout some fun activities to do in
+          Dominican Republic.
         </p>
-        <button id="result-close" class="capture-button" type="button">Done</button>
+        <div class="modal-actions">
+          <button id="result-activities" class="capture-button" type="button">View Activities</button>
+          <button id="result-close" class="cancel-button" type="button" disabled>Done</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="activities-modal" class="modal modal--activities" hidden>
+      <div class="modal-panel modal-panel--activities" role="dialog" aria-modal="true" aria-labelledby="activities-title">
+        <h2 id="activities-title">Fun Activities In Dominican Republic</h2>
+        <iframe
+          id="activities-frame"
+          class="activities-frame"
+          src="https://godominicanrepublic.com"
+          title="Go Dominican Republic"
+          loading="lazy"
+        ></iframe>
+        <div class="modal-actions">
+          <button id="activities-close" class="capture-button" type="button">Back</button>
+        </div>
       </div>
     </div>
 
