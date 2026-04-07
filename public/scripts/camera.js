@@ -1,4 +1,4 @@
-const cameraFeed = document.getElementById("camera-feed");
+﻿const cameraFeed = document.getElementById("camera-feed");
 const viewfinderGif = document.getElementById("viewfinder-gif");
 const countdownEl = document.getElementById("camera-countdown");
 const captureButton = document.getElementById("capture-button");
@@ -35,6 +35,7 @@ const cameraStartupTimeoutMs = 4000;
 
 let activeStream = null;
 let countdownTimer = null;
+let countdownDelayTimer = null;
 let readyForCapture = true;
 let customerEmail = "";
 let currentLanguage = "en";
@@ -42,14 +43,15 @@ let currentLanguage = "en";
 const translations = {
   en: {
     pageTitle: "Get Your Caricature Photo",
-    cultureTitle: "Muñeca Sin Rostro (Faceless Doll)",
+    cultureTitle: "MuÃ±eca Sin Rostro (Faceless Doll)",
     cultureText:
-      "Created in 1981 in Moca by pottery artisan Liliana Mera Lime, the Muñeca Sin Rostro was hand-shaped without molds, and that lack of tools gave it its blank face. Its colorful style quickly made it a beloved Dominican symbol, later evolving with figures carrying fruit, water, and wood as a canvas for identity and storytelling.",
+      "Created in 1981 in Moca by pottery artisan Liliana Mera Lime, the MuÃ±eca Sin Rostro was hand-shaped without molds, and that lack of tools gave it its blank face. Its colorful style quickly made it a beloved Dominican symbol, later evolving with figures carrying fruit, water, and wood as a canvas for identity and storytelling.",
     takePicture: "Take Picture",
     tapToStart: "Tap Take Picture to start",
     startingCamera: "Starting camera...",
     cameraDenied: "Camera access denied. Enable camera permissions.",
     cameraNotReady: "Camera is not ready. Try again.",
+    standOnBlueX: "Stand on the blue X",
     emailTitle: "Enter Your Email",
     emailLabel: "Email",
     emailPlaceholder: "you@example.com",
@@ -71,34 +73,35 @@ const translations = {
     uploadFailed: "Upload failed",
   },
   es: {
-    pageTitle: "Tómate Tu Foto Caricatura",
-    cultureTitle: "Muñeca Sin Rostro",
+    pageTitle: "TÃ³mate Tu Foto Caricatura",
+    cultureTitle: "MuÃ±eca Sin Rostro",
     cultureText:
-      "Creada en 1981 en Moca por la artesana Liliana Mera Lime, la Muñeca Sin Rostro fue moldeada a mano sin moldes, y esa falta de herramientas le dio su rostro en blanco. Su estilo colorido la convirtió en un símbolo querido de la cultura dominicana, evolucionando luego con figuras que cargan frutas, agua y madera como forma de identidad y narración.",
+      "Creada en 1981 en Moca por la artesana Liliana Mera Lime, la MuÃ±eca Sin Rostro fue moldeada a mano sin moldes, y esa falta de herramientas le dio su rostro en blanco. Su estilo colorido la convirtiÃ³ en un sÃ­mbolo querido de la cultura dominicana, evolucionando luego con figuras que cargan frutas, agua y madera como forma de identidad y narraciÃ³n.",
     takePicture: "Tomar Foto",
     tapToStart: "Toca Tomar Foto para comenzar",
-    startingCamera: "Iniciando cámara...",
-    cameraDenied: "Acceso a la cámara denegado. Habilita los permisos de cámara.",
-    cameraNotReady: "La cámara no está lista. Inténtalo de nuevo.",
+    startingCamera: "Iniciando cÃ¡mara...",
+    cameraDenied: "Acceso a la cÃ¡mara denegado. Habilita los permisos de cÃ¡mara.",
+    cameraNotReady: "La cÃ¡mara no estÃ¡ lista. IntÃ©ntalo de nuevo.",
+    standOnBlueX: "PÃ¡rate en la X azul",
     emailTitle: "Ingresa Tu Correo",
     emailLabel: "Correo",
     emailPlaceholder: "tu@ejemplo.com",
-    emailInvalid: "Ingresa un correo válido.",
+    emailInvalid: "Ingresa un correo vÃ¡lido.",
     emailStart: "Comenzar",
     cancel: "Cancelar",
     uploadWaitingTitle: "Actualizando Foto",
     uploadWaitingMessage:
-      "Te estamos convirtiendo en esta hermosa muñeca sin rostro. Toma unos minutos, pero cuando termine de generarse, la enviaremos a tu correo. Muchas gracias.",
+      "Te estamos convirtiendo en esta hermosa muÃ±eca sin rostro. Toma unos minutos, pero cuando termine de generarse, la enviaremos a tu correo. Muchas gracias.",
     uploadDoneTitle: "Foto Enviada",
     uploadDoneMessage:
-      "La foto aparecerá en tu correo en 3 a 5 minutos (revisa tu spam si no la ves).",
+      "La foto aparecerÃ¡ en tu correo en 3 a 5 minutos (revisa tu spam si no la ves).",
     uploadErrorTitle: "No Se Pudo Enviar La Foto",
     activitiesButton: "Ver Actividades",
     done: "Listo",
-    activitiesTitle: "Actividades Divertidas En República Dominicana",
+    activitiesTitle: "Actividades Divertidas En RepÃºblica Dominicana",
     back: "Volver",
     uploadComplete: "Carga completa",
-    uploadFailed: "La carga falló",
+    uploadFailed: "La carga fallÃ³",
   },
 };
 
@@ -201,6 +204,8 @@ function applyTranslations() {
     captureStatus.textContent = copy.tapToStart;
   } else if (captureStatus.textContent === translations.en.startingCamera || captureStatus.textContent === translations.es.startingCamera) {
     captureStatus.textContent = copy.startingCamera;
+  } else if (captureStatus.textContent === translations.en.standOnBlueX || captureStatus.textContent === translations.es.standOnBlueX) {
+    captureStatus.textContent = copy.standOnBlueX;
   }
 
   resetCaptureButtonLabel();
@@ -303,7 +308,11 @@ function onEmailConfirm() {
   customerEmail = sanitized;
   emailInput.value = sanitized;
   emailModal.hidden = true;
-  startCountdown(captureDurationSeconds);
+  captureStatus.textContent = translations[currentLanguage].standOnBlueX;
+  countdownDelayTimer = setTimeout(() => {
+    countdownDelayTimer = null;
+    startCountdown(captureDurationSeconds);
+  }, 3000);
 }
 
 function startCountdown(seconds) {
@@ -400,6 +409,9 @@ function closeResultModal() {
 window.addEventListener("beforeunload", () => {
   if (activeStream) {
     activeStream.getTracks().forEach((track) => track.stop());
+  }
+  if (countdownDelayTimer) {
+    clearTimeout(countdownDelayTimer);
   }
   if (countdownTimer) {
     clearInterval(countdownTimer);
