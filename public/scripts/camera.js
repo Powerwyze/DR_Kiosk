@@ -108,9 +108,21 @@ function hasLiveStream(stream) {
   return stream.getVideoTracks().some((track) => track.readyState === "live");
 }
 
+function bindStreamRecovery(stream) {
+  const tracks = stream?.getVideoTracks?.() || [];
+  tracks.forEach((track) => {
+    track.onended = () => {
+      if (stream === activeStream) {
+        refreshCameraStream().catch((error) => console.error(error));
+      }
+    };
+  });
+}
+
 async function createCameraStream() {
   const stream = await navigator.mediaDevices.getUserMedia(cameraConstraints);
   await trySetMinimumZoom(stream);
+  bindStreamRecovery(stream);
   return stream;
 }
 
@@ -168,6 +180,15 @@ async function refreshCameraStream() {
   } finally {
     cameraRefreshPromise = null;
   }
+}
+
+async function ensureCameraPlayback() {
+  if (hasLiveStream(activeStream)) {
+    cameraFeed.srcObject = activeStream;
+    await cameraFeed.play().catch(() => {});
+    return;
+  }
+  await refreshCameraStream();
 }
 
 async function trySetMinimumZoom(stream) {
@@ -246,7 +267,7 @@ function resetCaptureSession() {
   resetCaptureButtonLabel();
   readyForCapture = true;
   captureButton.disabled = false;
-  refreshCameraStream().catch((error) => console.error(error));
+  ensureCameraPlayback().catch((error) => console.error(error));
 }
 
 function onEmailConfirm() {
@@ -345,5 +366,11 @@ window.addEventListener("beforeunload", () => {
   stopCameraStream();
   if (countdownTimer) {
     clearInterval(countdownTimer);
+  }
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    ensureCameraPlayback().catch((error) => console.error(error));
   }
 });
