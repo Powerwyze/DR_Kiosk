@@ -14,7 +14,6 @@ const emailCancelButton = document.getElementById("email-cancel");
 const resultModal = document.getElementById("result-modal");
 const resultTitle = document.getElementById("result-title");
 const resultMessage = document.getElementById("result-message");
-const resultActivitiesButton = document.getElementById("result-activities");
 const resultCloseButton = document.getElementById("result-close");
 const activitiesModal = document.getElementById("activities-modal");
 const activitiesCloseButton = document.getElementById("activities-close");
@@ -65,7 +64,6 @@ const translations = {
     uploadDoneMessage:
       "The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).",
     uploadErrorTitle: "Unable To Send Photo",
-    activitiesButton: "View Activities",
     done: "Done",
     activitiesTitle: "Fun Activities In Dominican Republic",
     back: "Back",
@@ -96,7 +94,6 @@ const translations = {
     uploadDoneMessage:
       "La foto aparecer\u00e1 en tu correo en 3 a 5 minutos (revisa tu spam si no la ves).",
     uploadErrorTitle: "No Se Pudo Enviar La Foto",
-    activitiesButton: "Ver Actividades",
     done: "Listo",
     activitiesTitle: "Actividades Divertidas En Rep\u00fablica Dominicana",
     back: "Volver",
@@ -110,7 +107,6 @@ startCamera();
 captureButton.addEventListener("click", onCaptureClick);
 emailEnterButton.addEventListener("click", onEmailConfirm);
 emailCancelButton.addEventListener("click", closeEmailModal);
-resultActivitiesButton.addEventListener("click", openActivitiesModal);
 activitiesCloseButton.addEventListener("click", closeActivitiesModal);
 resultCloseButton.addEventListener("click", closeResultModal);
 langEnButton.addEventListener("click", () => setLanguage("en"));
@@ -191,7 +187,6 @@ function applyTranslations() {
   emailInput.placeholder = copy.emailPlaceholder;
   emailEnterButton.textContent = copy.emailStart;
   emailCancelButton.textContent = copy.cancel;
-  resultActivitiesButton.textContent = copy.activitiesButton;
   resultCloseButton.textContent = copy.done;
   activitiesTitle.textContent = copy.activitiesTitle;
   activitiesCloseButton.textContent = copy.back;
