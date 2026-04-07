@@ -20,6 +20,7 @@ const saveCaptureEndpoint = "/save-capture";
 const defaultCaptureButtonLabel = "Take Picture";
 const uploadingCaptureButtonLabel = "Uploading...";
 const cameraReadyTimeoutMs = 5000;
+const cameraReadyPollMs = 120;
 
 let activeStream = null;
 let countdownTimer = null;
@@ -79,14 +80,22 @@ function hasUsableVideoFrame() {
   return Boolean(cameraFeed.videoWidth && cameraFeed.videoHeight && cameraFeed.readyState >= 2);
 }
 
+function markCameraReady() {
+  cameraIsReady = true;
+  captureStatus.textContent = "Tap Take Picture to start";
+  captureButton.disabled = false;
+  resetCaptureButtonLabel();
+}
+
 function waitForCameraReady(timeoutMs = cameraReadyTimeoutMs) {
   if (hasUsableVideoFrame()) {
-    cameraIsReady = true;
+    markCameraReady();
     return Promise.resolve();
   }
 
   return new Promise((resolve, reject) => {
     let timeoutId = null;
+    let intervalId = null;
 
     const cleanup = () => {
       cameraFeed.removeEventListener("loadedmetadata", onReady);
@@ -95,6 +104,9 @@ function waitForCameraReady(timeoutMs = cameraReadyTimeoutMs) {
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
     };
 
     const onReady = () => {
@@ -102,7 +114,7 @@ function waitForCameraReady(timeoutMs = cameraReadyTimeoutMs) {
         return;
       }
       cleanup();
-      cameraIsReady = true;
+      markCameraReady();
       resolve();
     };
 
@@ -110,6 +122,8 @@ function waitForCameraReady(timeoutMs = cameraReadyTimeoutMs) {
       cleanup();
       reject(new Error("Camera feed did not become ready in time."));
     }, timeoutMs);
+
+    intervalId = setInterval(onReady, cameraReadyPollMs);
 
     cameraFeed.addEventListener("loadedmetadata", onReady);
     cameraFeed.addEventListener("canplay", onReady);
@@ -132,14 +146,13 @@ async function startCamera() {
     });
     await trySetMinimumZoom(activeStream);
     cameraFeed.srcObject = activeStream;
-    await cameraFeed.play();
+    cameraFeed.play().catch((error) => {
+      console.error(error);
+    });
     await waitForCameraReady();
-    captureStatus.textContent = "Tap Take Picture to start";
-    captureButton.disabled = false;
-    resetCaptureButtonLabel();
   } catch (error) {
     console.error(error);
-    captureStatus.textContent = "Camera access denied. Enable camera permissions.";
+    captureStatus.textContent = "Camera is taking longer than expected. Refresh permissions and try again.";
     captureButton.disabled = true;
   }
 }
