@@ -98,6 +98,8 @@ body {
 }
 
 .camera-feed {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -105,9 +107,25 @@ body {
   background: #000;
 }
 
+.viewfinder-gif {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 180ms ease;
+}
+
+.viewfinder-gif.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .camera-countdown {
   position: absolute;
   inset: 0;
+  z-index: 3;
   display: none;
   align-items: flex-start;
   justify-content: center;
@@ -121,6 +139,7 @@ body {
 
 .camera-controls {
   position: absolute;
+  z-index: 4;
   left: 50%;
   bottom: 0.9rem;
   transform: translateX(-50%);

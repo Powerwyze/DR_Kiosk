@@ -1,4 +1,5 @@
 const cameraFeed = document.getElementById("camera-feed");
+const viewfinderGif = document.getElementById("viewfinder-gif");
 const countdownEl = document.getElementById("camera-countdown");
 const captureButton = document.getElementById("capture-button");
 const captureStatus = document.getElementById("capture-status");
@@ -84,6 +85,18 @@ function isValidEmail(email) {
   return /^[^@]+@[^@]+\.[a-z]{2,}$/i.test(email);
 }
 
+function showGifPreview() {
+  if (viewfinderGif) {
+    viewfinderGif.classList.remove("is-hidden");
+  }
+}
+
+function hideGifPreview() {
+  if (viewfinderGif) {
+    viewfinderGif.classList.add("is-hidden");
+  }
+}
+
 async function startCamera() {
   try {
     debugEvent("camera.request.start", { idealWidth: 1280, idealHeight: 960, facingMode: "user" });
@@ -133,6 +146,7 @@ function onCaptureClick() {
   if (!readyForCapture) {
     return;
   }
+  hideGifPreview();
   readyForCapture = false;
   captureButton.disabled = true;
   openEmailModal();
@@ -147,6 +161,8 @@ function openEmailModal() {
 
 function closeEmailModal() {
   emailModal.hidden = true;
+  showGifPreview();
+  captureStatus.textContent = "Tap Take Picture to start";
   captureButton.disabled = false;
   readyForCapture = true;
 }
@@ -192,6 +208,7 @@ function capturePhoto() {
       videoHeight: cameraFeed.videoHeight,
     });
     captureStatus.textContent = "Camera is not ready. Try again.";
+    showGifPreview();
     captureButton.disabled = false;
     readyForCapture = true;
     return;
@@ -249,7 +266,8 @@ async function sendPhoto(imageData, email) {
       throw new Error(payload?.error || `Upload failed (${response.status})`);
     }
 
-    resultMessage.textContent = `Your photo was sent to ${sanitizeEmail(payload.email || email)}.`;
+    resultMessage.textContent =
+      "The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).";
     resultModal.hidden = false;
     captureStatus.textContent = "Upload complete";
     debugEvent("upload.request.success", {
@@ -274,6 +292,8 @@ async function sendPhoto(imageData, email) {
 
 function closeResultModal() {
   resultModal.hidden = true;
+  showGifPreview();
+  captureStatus.textContent = "Tap Take Picture to start";
 }
 
 window.addEventListener("beforeunload", () => {

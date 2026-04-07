@@ -16,15 +16,18 @@
       <section class="camera-panel" aria-label="Camera kiosk">
         <h1 class="title">Get Your Caricature Photo</h1>
         <article class="culture-note" aria-label="Dominican culture note">
-          <h2>Muñeca Sin Rostro (Faceless Doll)</h2>
+          <h2>Mu&ntilde;eca Sin Rostro (Faceless Doll)</h2>
           <p>
-            A beloved symbol of Dominican culture, the faceless doll represents the island’s rich blend
-            of identities and shared heritage. Its missing face is intentional: it stands for everyone.
+            Created in 1981 in Moca by pottery artisan Liliana Mera Lime, the Mu&ntilde;eca Sin Rostro was
+            hand-shaped without molds, and that lack of tools gave it its blank face. Its colorful style
+            quickly made it a beloved Dominican symbol, later evolving with figures carrying fruit, water,
+            and wood as a canvas for identity and storytelling.
           </p>
         </article>
 
         <div class="camera-frame">
           <video id="camera-feed" class="camera-feed" autoplay playsinline muted></video>
+          <img id="viewfinder-gif" class="viewfinder-gif" src="assets/reference.gif" alt="Muneca Sin Rostro preview" />
           <div id="camera-countdown" class="camera-countdown" aria-live="assertive"></div>
 
           <div class="camera-controls">
@@ -59,7 +62,9 @@
     <div id="result-modal" class="modal" hidden>
       <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="result-title">
         <h2 id="result-title">Photo Sent</h2>
-        <p id="result-message" class="result-message">We are emailing your image now.</p>
+        <p id="result-message" class="result-message">
+          The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).
+        </p>
         <button id="result-close" class="capture-button" type="button">Done</button>
       </div>
     </div>
