@@ -18,6 +18,14 @@ const resultActivitiesButton = document.getElementById("result-activities");
 const resultCloseButton = document.getElementById("result-close");
 const activitiesModal = document.getElementById("activities-modal");
 const activitiesCloseButton = document.getElementById("activities-close");
+const langEnButton = document.getElementById("lang-en");
+const langEsButton = document.getElementById("lang-es");
+const pageTitle = document.getElementById("page-title");
+const cultureTitle = document.getElementById("culture-title");
+const cultureText = document.getElementById("culture-text");
+const emailModalTitle = document.getElementById("email-modal-title");
+const emailLabel = document.getElementById("email-label");
+const activitiesTitle = document.getElementById("activities-title");
 
 const captureDurationSeconds = 5;
 const saveCaptureEndpoint = "/save-capture";
@@ -29,6 +37,70 @@ let activeStream = null;
 let countdownTimer = null;
 let readyForCapture = true;
 let customerEmail = "";
+let currentLanguage = "en";
+
+const translations = {
+  en: {
+    pageTitle: "Get Your Caricature Photo",
+    cultureTitle: "Muñeca Sin Rostro (Faceless Doll)",
+    cultureText:
+      "Created in 1981 in Moca by pottery artisan Liliana Mera Lime, the Muñeca Sin Rostro was hand-shaped without molds, and that lack of tools gave it its blank face. Its colorful style quickly made it a beloved Dominican symbol, later evolving with figures carrying fruit, water, and wood as a canvas for identity and storytelling.",
+    takePicture: "Take Picture",
+    tapToStart: "Tap Take Picture to start",
+    startingCamera: "Starting camera...",
+    cameraDenied: "Camera access denied. Enable camera permissions.",
+    cameraNotReady: "Camera is not ready. Try again.",
+    emailTitle: "Enter Your Email",
+    emailLabel: "Email",
+    emailPlaceholder: "you@example.com",
+    emailInvalid: "Enter a valid email address.",
+    emailStart: "Start",
+    cancel: "Cancel",
+    uploadWaitingTitle: "Updating Photo",
+    uploadWaitingMessage:
+      "We are updating your photo and will email you shortly. While you wait, checkout some fun activities to do in Dominican Republic.",
+    uploadDoneTitle: "Photo Sent",
+    uploadDoneMessage:
+      "The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).",
+    uploadErrorTitle: "Unable To Send Photo",
+    activitiesButton: "View Activities",
+    done: "Done",
+    activitiesTitle: "Fun Activities In Dominican Republic",
+    back: "Back",
+    uploadComplete: "Upload complete",
+    uploadFailed: "Upload failed",
+  },
+  es: {
+    pageTitle: "Tómate Tu Foto Caricatura",
+    cultureTitle: "Muñeca Sin Rostro",
+    cultureText:
+      "Creada en 1981 en Moca por la artesana Liliana Mera Lime, la Muñeca Sin Rostro fue moldeada a mano sin moldes, y esa falta de herramientas le dio su rostro en blanco. Su estilo colorido la convirtió en un símbolo querido de la cultura dominicana, evolucionando luego con figuras que cargan frutas, agua y madera como forma de identidad y narración.",
+    takePicture: "Tomar Foto",
+    tapToStart: "Toca Tomar Foto para comenzar",
+    startingCamera: "Iniciando cámara...",
+    cameraDenied: "Acceso a la cámara denegado. Habilita los permisos de cámara.",
+    cameraNotReady: "La cámara no está lista. Inténtalo de nuevo.",
+    emailTitle: "Ingresa Tu Correo",
+    emailLabel: "Correo",
+    emailPlaceholder: "tu@ejemplo.com",
+    emailInvalid: "Ingresa un correo válido.",
+    emailStart: "Comenzar",
+    cancel: "Cancelar",
+    uploadWaitingTitle: "Actualizando Foto",
+    uploadWaitingMessage:
+      "Estamos actualizando tu foto y te la enviaremos por correo en breve. Mientras esperas, mira algunas actividades divertidas para hacer en República Dominicana.",
+    uploadDoneTitle: "Foto Enviada",
+    uploadDoneMessage:
+      "La foto aparecerá en tu correo en 3 a 5 minutos (revisa tu spam si no la ves).",
+    uploadErrorTitle: "No Se Pudo Enviar La Foto",
+    activitiesButton: "Ver Actividades",
+    done: "Listo",
+    activitiesTitle: "Actividades Divertidas En República Dominicana",
+    back: "Volver",
+    uploadComplete: "Carga completa",
+    uploadFailed: "La carga falló",
+  },
+};
 
 startCamera();
 
@@ -38,12 +110,16 @@ emailCancelButton.addEventListener("click", closeEmailModal);
 resultActivitiesButton.addEventListener("click", openActivitiesModal);
 activitiesCloseButton.addEventListener("click", closeActivitiesModal);
 resultCloseButton.addEventListener("click", closeResultModal);
+langEnButton.addEventListener("click", () => setLanguage("en"));
+langEsButton.addEventListener("click", () => setLanguage("es"));
 emailInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
     onEmailConfirm();
   }
 });
+
+applyTranslations();
 
 function sanitizeEmail(input) {
   return String(input || "")
@@ -65,7 +141,7 @@ function setCaptureButtonLabel(label) {
 }
 
 function resetCaptureButtonLabel() {
-  setCaptureButtonLabel(defaultCaptureButtonLabel);
+  setCaptureButtonLabel(translations[currentLanguage].takePicture || defaultCaptureButtonLabel);
 }
 
 function showGifPreview() {
@@ -95,6 +171,41 @@ function closeActivitiesModal() {
   activitiesModal.hidden = true;
 }
 
+function setLanguage(language) {
+  currentLanguage = language === "es" ? "es" : "en";
+  applyTranslations();
+}
+
+function applyTranslations() {
+  const copy = translations[currentLanguage];
+  pageTitle.textContent = copy.pageTitle;
+  cultureTitle.textContent = copy.cultureTitle;
+  cultureText.textContent = copy.cultureText;
+  emailModalTitle.textContent = copy.emailTitle;
+  emailLabel.textContent = copy.emailLabel;
+  emailInput.placeholder = copy.emailPlaceholder;
+  emailEnterButton.textContent = copy.emailStart;
+  emailCancelButton.textContent = copy.cancel;
+  resultActivitiesButton.textContent = copy.activitiesButton;
+  resultCloseButton.textContent = copy.done;
+  activitiesTitle.textContent = copy.activitiesTitle;
+  activitiesCloseButton.textContent = copy.back;
+  langEnButton.classList.toggle("is-active", currentLanguage === "en");
+  langEsButton.classList.toggle("is-active", currentLanguage === "es");
+
+  if (!resultModal.hidden) {
+    if (resultCloseButton.disabled) {
+      showUploadPopup(copy.uploadWaitingTitle, copy.uploadWaitingMessage, false);
+    }
+  } else if (captureStatus.textContent === translations.en.tapToStart || captureStatus.textContent === translations.es.tapToStart) {
+    captureStatus.textContent = copy.tapToStart;
+  } else if (captureStatus.textContent === translations.en.startingCamera || captureStatus.textContent === translations.es.startingCamera) {
+    captureStatus.textContent = copy.startingCamera;
+  }
+
+  resetCaptureButtonLabel();
+}
+
 function waitForCameraFrame(timeoutMs = cameraStartupTimeoutMs) {
   if (cameraFeed.videoWidth && cameraFeed.videoHeight) {
     return Promise.resolve();
@@ -120,7 +231,7 @@ function waitForCameraFrame(timeoutMs = cameraStartupTimeoutMs) {
 async function startCamera() {
   try {
     captureButton.disabled = true;
-    captureStatus.textContent = "Starting camera...";
+    captureStatus.textContent = translations[currentLanguage].startingCamera;
     activeStream = await navigator.mediaDevices.getUserMedia({
       video: true,
       audio: false,
@@ -130,12 +241,12 @@ async function startCamera() {
       console.error(error);
     });
     await waitForCameraFrame();
-    captureStatus.textContent = "Tap Take Picture to start";
+    captureStatus.textContent = translations[currentLanguage].tapToStart;
     captureButton.disabled = false;
     resetCaptureButtonLabel();
   } catch (error) {
     console.error(error);
-    captureStatus.textContent = "Camera access denied. Enable camera permissions.";
+    captureStatus.textContent = translations[currentLanguage].cameraDenied;
     captureButton.disabled = true;
   }
 }
@@ -168,7 +279,7 @@ function onCaptureClick() {
 
 function openEmailModal() {
   emailError.textContent = "";
-  emailInput.value = customerEmail;
+  emailInput.value = "";
   emailModal.hidden = false;
   emailInput.focus({ preventScroll: true });
 }
@@ -176,7 +287,7 @@ function openEmailModal() {
 function closeEmailModal() {
   emailModal.hidden = true;
   showGifPreview();
-  captureStatus.textContent = "Tap Take Picture to start";
+  captureStatus.textContent = translations[currentLanguage].tapToStart;
   resetCaptureButtonLabel();
   captureButton.disabled = false;
   readyForCapture = true;
@@ -185,7 +296,7 @@ function closeEmailModal() {
 function onEmailConfirm() {
   const sanitized = sanitizeEmail(emailInput.value);
   if (!isValidEmail(sanitized)) {
-    emailError.textContent = "Enter a valid email address.";
+    emailError.textContent = translations[currentLanguage].emailInvalid;
     return;
   }
 
@@ -215,7 +326,7 @@ function startCountdown(seconds) {
 
 function capturePhoto() {
   if (!cameraFeed.videoWidth || !cameraFeed.videoHeight) {
-    captureStatus.textContent = "Camera is not ready. Try again.";
+    captureStatus.textContent = translations[currentLanguage].cameraNotReady;
     showGifPreview();
     resetCaptureButtonLabel();
     captureButton.disabled = false;
@@ -236,8 +347,8 @@ async function sendPhoto(imageData, email) {
   captureStatus.textContent = "";
   resetCaptureButtonLabel();
   showUploadPopup(
-    "Updating Photo",
-    "We are updating your photo and will email you shortly. While you wait, checkout some fun activities to do in Dominican Republic.",
+    translations[currentLanguage].uploadWaitingTitle,
+    translations[currentLanguage].uploadWaitingMessage,
     false,
   );
   const requestId = generateRequestId();
@@ -260,15 +371,15 @@ async function sendPhoto(imageData, email) {
     }
 
     showUploadPopup(
-      "Photo Sent",
-      "The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).",
+      translations[currentLanguage].uploadDoneTitle,
+      translations[currentLanguage].uploadDoneMessage,
       true,
     );
-    captureStatus.textContent = "Upload complete";
+    captureStatus.textContent = translations[currentLanguage].uploadComplete;
   } catch (error) {
     console.error(error);
-    showUploadPopup("Unable To Send Photo", `Error: ${error.message}`, true);
-    captureStatus.textContent = "Upload failed";
+    showUploadPopup(translations[currentLanguage].uploadErrorTitle, `Error: ${error.message}`, true);
+    captureStatus.textContent = translations[currentLanguage].uploadFailed;
   } finally {
     resetCaptureButtonLabel();
     captureButton.disabled = true;
@@ -280,7 +391,7 @@ function closeResultModal() {
   closeActivitiesModal();
   resultModal.hidden = true;
   showGifPreview();
-  captureStatus.textContent = "Tap Take Picture to start";
+  captureStatus.textContent = translations[currentLanguage].tapToStart;
   resetCaptureButtonLabel();
   captureButton.disabled = false;
   readyForCapture = true;

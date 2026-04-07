@@ -14,10 +14,14 @@
 
     <main class="app-shell">
       <section class="camera-panel" aria-label="Camera kiosk">
-        <h1 class="title">Get Your Caricature Photo</h1>
+        <div class="lang-toggle" role="group" aria-label="Language toggle">
+          <button id="lang-en" class="lang-toggle__button is-active" type="button">EN</button>
+          <button id="lang-es" class="lang-toggle__button" type="button">ES</button>
+        </div>
+        <h1 id="page-title" class="title">Get Your Caricature Photo</h1>
         <article class="culture-note" aria-label="Dominican culture note">
-          <h2>Mu&ntilde;eca Sin Rostro (Faceless Doll)</h2>
-          <p>
+          <h2 id="culture-title">Mu&ntilde;eca Sin Rostro (Faceless Doll)</h2>
+          <p id="culture-text">
             Created in 1981 in Moca by pottery artisan Liliana Mera Lime, the Mu&ntilde;eca Sin Rostro was
             hand-shaped without molds, and that lack of tools gave it its blank face. Its colorful style
             quickly made it a beloved Dominican symbol, later evolving with figures carrying fruit, water,
@@ -41,7 +45,7 @@
     <div id="email-modal" class="modal" hidden>
       <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="email-modal-title">
         <h2 id="email-modal-title">Enter Your Email</h2>
-        <label class="modal-label" for="email-input">Email</label>
+        <label id="email-label" class="modal-label" for="email-input">Email</label>
         <input id="email-input" class="modal-input" type="email" autocomplete="email" placeholder="you@example.com" />
         <span id="email-error" class="modal-error" role="alert" aria-live="polite"></span>
         <div class="modal-actions">

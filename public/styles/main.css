@@ -55,6 +55,35 @@ body {
   gap: 0.6rem;
 }
 
+.lang-toggle {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 0.35rem;
+  justify-self: center;
+  padding: 0.28rem;
+  border-radius: 999px;
+  background: rgba(8, 12, 22, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+}
+
+.lang-toggle__button {
+  min-width: 54px;
+  min-height: 38px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lang-toggle__button.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+}
+
 .title {
   margin: 0;
   text-align: center;
