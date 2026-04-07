@@ -215,6 +215,51 @@ body {
   background: rgba(0, 0, 0, 0.2);
 }
 
+.debug-panel {
+  position: fixed;
+  right: max(env(safe-area-inset-right), 0.5rem);
+  bottom: max(env(safe-area-inset-bottom), 0.5rem);
+  width: min(92vw, 430px);
+  max-height: min(45vh, 340px);
+  background: rgba(0, 0, 0, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 0.75rem;
+  z-index: 50;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.debug-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 0.82rem;
+}
+
+.debug-clear {
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 0.26rem 0.58rem;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.debug-log {
+  margin: 0;
+  padding: 0.55rem 0.62rem;
+  overflow: auto;
+  color: #87ffba;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 @media (min-width: 900px) {
   .camera-panel {
     width: min(40vw, 500px);
