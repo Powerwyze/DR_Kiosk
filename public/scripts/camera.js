@@ -14,13 +14,11 @@ const emailCancelButton = document.getElementById("email-cancel");
 const resultModal = document.getElementById("result-modal");
 const resultMessage = document.getElementById("result-message");
 const resultCloseButton = document.getElementById("result-close");
-const debugPanel = document.getElementById("debug-panel");
-const debugLogEl = document.getElementById("debug-log");
-const debugClearButton = document.getElementById("debug-clear");
 
 const captureDurationSeconds = 5;
 const saveCaptureEndpoint = "/save-capture";
-const debugEnabled = new URLSearchParams(window.location.search).get("debug") === "1";
+const defaultCaptureButtonLabel = "Take Picture";
+const uploadingCaptureButtonLabel = "Uploading...";
 
 let activeStream = null;
 let countdownTimer = null;
@@ -39,20 +37,6 @@ emailInput.addEventListener("keydown", (event) => {
     onEmailConfirm();
   }
 });
-if (debugClearButton) {
-  debugClearButton.addEventListener("click", () => {
-    if (debugLogEl) {
-      debugLogEl.textContent = "";
-    }
-  });
-}
-if (debugEnabled && debugPanel) {
-  debugPanel.hidden = false;
-}
-debugEvent("init", {
-  debugEnabled,
-  userAgent: navigator.userAgent,
-});
 
 function sanitizeEmail(input) {
   return String(input || "")
@@ -61,28 +45,20 @@ function sanitizeEmail(input) {
     .replace(/[\[\]\s]+/g, "");
 }
 
-function nowIso() {
-  return new Date().toISOString();
-}
-
 function generateRequestId() {
   return `drk-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-function debugEvent(label, details) {
-  if (!debugEnabled || !debugLogEl) {
-    return;
-  }
-
-  const safeDetails = details && typeof details === "object" ? details : { value: details };
-  const line = `[${nowIso()}] ${label}: ${JSON.stringify(safeDetails)}`;
-  debugLogEl.textContent = `${debugLogEl.textContent}${line}\n`;
-  debugLogEl.scrollTop = debugLogEl.scrollHeight;
-  console.info(`[DR_DEBUG] ${label}`, safeDetails);
-}
-
 function isValidEmail(email) {
   return /^[^@]+@[^@]+\.[a-z]{2,}$/i.test(email);
+}
+
+function setCaptureButtonLabel(label) {
+  captureButton.textContent = label;
+}
+
+function resetCaptureButtonLabel() {
+  setCaptureButtonLabel(defaultCaptureButtonLabel);
 }
 
 function showGifPreview() {
@@ -99,27 +75,21 @@ function hideGifPreview() {
 
 async function startCamera() {
   try {
-    debugEvent("camera.request.start", { idealWidth: 1280, idealHeight: 960, facingMode: "user" });
     activeStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: "user",
         width: { ideal: 1280 },
-        height: { ideal: 960 }
+        height: { ideal: 960 },
       },
       audio: false,
     });
     await trySetMinimumZoom(activeStream);
     cameraFeed.srcObject = activeStream;
     await cameraFeed.play();
-    debugEvent("camera.request.success", {
-      width: cameraFeed.videoWidth,
-      height: cameraFeed.videoHeight,
-      trackCount: activeStream.getTracks().length,
-    });
     captureStatus.textContent = "Tap Take Picture to start";
+    resetCaptureButtonLabel();
   } catch (error) {
     console.error(error);
-    debugEvent("camera.request.error", { message: error?.message || String(error) });
     captureStatus.textContent = "Camera access denied. Enable camera permissions.";
     captureButton.disabled = true;
   }
@@ -135,10 +105,9 @@ async function trySetMinimumZoom(stream) {
     const capabilities = track.getCapabilities();
     if (capabilities && typeof capabilities.zoom === "object" && typeof capabilities.zoom.min === "number") {
       await track.applyConstraints({ advanced: [{ zoom: capabilities.zoom.min }] });
-      debugEvent("camera.zoom.applied", { zoom: capabilities.zoom.min });
     }
   } catch (error) {
-    debugEvent("camera.zoom.skip", { message: error?.message || String(error) });
+    console.error(error);
   }
 }
 
@@ -163,16 +132,15 @@ function closeEmailModal() {
   emailModal.hidden = true;
   showGifPreview();
   captureStatus.textContent = "Tap Take Picture to start";
+  resetCaptureButtonLabel();
   captureButton.disabled = false;
   readyForCapture = true;
 }
 
 function onEmailConfirm() {
   const sanitized = sanitizeEmail(emailInput.value);
-  debugEvent("email.confirm", { input: emailInput.value, sanitized });
   if (!isValidEmail(sanitized)) {
     emailError.textContent = "Enter a valid email address.";
-    debugEvent("email.invalid", { sanitized });
     return;
   }
 
@@ -184,7 +152,6 @@ function onEmailConfirm() {
 
 function startCountdown(seconds) {
   let remaining = seconds;
-  debugEvent("countdown.start", { seconds });
   countdownEl.style.display = "flex";
   countdownEl.textContent = String(remaining);
 
@@ -203,12 +170,9 @@ function startCountdown(seconds) {
 
 function capturePhoto() {
   if (!cameraFeed.videoWidth || !cameraFeed.videoHeight) {
-    debugEvent("capture.not_ready", {
-      videoWidth: cameraFeed.videoWidth,
-      videoHeight: cameraFeed.videoHeight,
-    });
     captureStatus.textContent = "Camera is not ready. Try again.";
     showGifPreview();
+    resetCaptureButtonLabel();
     captureButton.disabled = false;
     readyForCapture = true;
     return;
@@ -220,25 +184,14 @@ function capturePhoto() {
   context.drawImage(cameraFeed, 0, 0, canvas.width, canvas.height);
 
   const imageData = canvas.toDataURL("image/jpeg", 0.92);
-  debugEvent("capture.snapshot", {
-    width: canvas.width,
-    height: canvas.height,
-    dataLength: imageData.length,
-  });
   sendPhoto(imageData, customerEmail);
 }
 
 async function sendPhoto(imageData, email) {
   captureStatus.textContent = "Uploading...";
+  setCaptureButtonLabel(uploadingCaptureButtonLabel);
   const requestId = generateRequestId();
   const sanitizedEmail = sanitizeEmail(email);
-  const startTs = performance.now();
-  debugEvent("upload.request.start", {
-    requestId,
-    endpoint: saveCaptureEndpoint,
-    email: sanitizedEmail,
-    imageDataLength: imageData.length,
-  });
 
   try {
     const response = await fetch(saveCaptureEndpoint, {
@@ -246,21 +199,11 @@ async function sendPhoto(imageData, email) {
       headers: {
         "Content-Type": "application/json",
         "x-request-id": requestId,
-        "x-debug": debugEnabled ? "1" : "0",
       },
       body: JSON.stringify({ imageData, email: sanitizedEmail }),
     });
 
     const payload = await response.json().catch(() => ({}));
-    const durationMs = Math.round(performance.now() - startTs);
-    debugEvent("upload.request.response", {
-      requestId,
-      status: response.status,
-      ok: response.ok,
-      durationMs,
-      responseRequestId: response.headers.get("x-request-id") || null,
-      upstreamSummary: payload?.debug?.upstreamSummary || null,
-    });
 
     if (!response.ok || payload?.status !== "success") {
       throw new Error(payload?.error || `Upload failed (${response.status})`);
@@ -270,21 +213,13 @@ async function sendPhoto(imageData, email) {
       "The picture will show up in your email in 3 to 5 mins (check your spam if you don't see it).";
     resultModal.hidden = false;
     captureStatus.textContent = "Upload complete";
-    debugEvent("upload.request.success", {
-      requestId,
-      email: sanitizeEmail(payload.email || email),
-      fileName: payload.fileName || null,
-    });
   } catch (error) {
     console.error(error);
-    debugEvent("upload.request.error", {
-      requestId,
-      message: error?.message || String(error),
-    });
     resultMessage.textContent = `Error: ${error.message}`;
     resultModal.hidden = false;
     captureStatus.textContent = "Upload failed";
   } finally {
+    resetCaptureButtonLabel();
     captureButton.disabled = false;
     readyForCapture = true;
   }
@@ -294,6 +229,7 @@ function closeResultModal() {
   resultModal.hidden = true;
   showGifPreview();
   captureStatus.textContent = "Tap Take Picture to start";
+  resetCaptureButtonLabel();
 }
 
 window.addEventListener("beforeunload", () => {
