@@ -23,6 +23,7 @@ const captureDurationSeconds = 5;
 const saveCaptureEndpoint = "/save-capture";
 const defaultCaptureButtonLabel = "Take Picture";
 const uploadingCaptureButtonLabel = "Uploading...";
+const cameraStartupTimeoutMs = 4000;
 
 let activeStream = null;
 let countdownTimer = null;
@@ -94,84 +95,41 @@ function closeActivitiesModal() {
   activitiesModal.hidden = true;
 }
 
-function getVideoDevices() {
-  if (!navigator.mediaDevices?.enumerateDevices) {
-    return [];
+function waitForCameraFrame(timeoutMs = cameraStartupTimeoutMs) {
+  if (cameraFeed.videoWidth && cameraFeed.videoHeight) {
+    return Promise.resolve();
   }
 
-  return navigator.mediaDevices
-    .enumerateDevices()
-    .then((devices) => devices.filter((device) => device.kind === "videoinput"))
-    .catch(() => []);
-}
+  return new Promise((resolve, reject) => {
+    const startedAt = Date.now();
+    const intervalId = setInterval(() => {
+      if (cameraFeed.videoWidth && cameraFeed.videoHeight) {
+        clearInterval(intervalId);
+        resolve();
+        return;
+      }
 
-function isLikelyUsbCamera(label) {
-  const text = String(label || "").toLowerCase();
-  return /\busb\b|\bexternal\b|\bhd\s?camera\b|\bwebcam\b|\blogitech\b|\bobs\b/.test(text);
-}
-
-function isLikelyIntegratedCamera(label) {
-  const text = String(label || "").toLowerCase();
-  return /\bintegrated\b|\bface(?:-)?time\b|\binternal\b|\bbuilt[-\s]?in\b|\blaptop\b/.test(text);
-}
-
-async function pickUsbVideoDeviceId() {
-  const devices = await getVideoDevices();
-  if (!devices.length) {
-    return "";
-  }
-
-  const scored = devices.map((device) => {
-    const label = device.label || "";
-    const isUsb = isLikelyUsbCamera(label);
-    const score = isUsb ? 200 : 0;
-    if (!isLikelyIntegratedCamera(label)) {
-      return { device, score: score + 10 };
-    }
-    return { device, score };
+      if (Date.now() - startedAt >= timeoutMs) {
+        clearInterval(intervalId);
+        reject(new Error("Timed out waiting for camera frame."));
+      }
+    }, 100);
   });
-
-  scored.sort((a, b) => b.score - a.score);
-
-  const bestLabelKnown = scored.find((entry) => entry.device.label && entry.score > 0);
-  if (bestLabelKnown) {
-    return bestLabelKnown.device.deviceId;
-  }
-
-  if (devices.length > 1) {
-    return scored[1]?.device.deviceId || "";
-  }
-
-  return scored[0]?.device.deviceId || "";
 }
 
 async function startCamera() {
   try {
     captureButton.disabled = true;
     captureStatus.textContent = "Starting camera...";
-    const preferredDeviceId = await pickUsbVideoDeviceId();
-    const constraints = preferredDeviceId
-      ? {
-          video: { deviceId: { exact: preferredDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false,
-        }
-      : {
-          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false,
-        };
-
-    try {
-      activeStream = await navigator.mediaDevices.getUserMedia(constraints);
-    } catch (error) {
-      activeStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      });
-    }
-
-    await trySetMinimumZoom(activeStream);
+    activeStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false,
+    });
     cameraFeed.srcObject = activeStream;
-    await cameraFeed.play();
+    cameraFeed.play().catch((error) => {
+      console.error(error);
+    });
+    await waitForCameraFrame();
     captureStatus.textContent = "Tap Take Picture to start";
     captureButton.disabled = false;
     resetCaptureButtonLabel();
