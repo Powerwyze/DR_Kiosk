@@ -19,6 +19,7 @@ const activitiesModal = document.getElementById("activities-modal");
 const activitiesCloseButton = document.getElementById("activities-close");
 const langEnButton = document.getElementById("lang-en");
 const langEsButton = document.getElementById("lang-es");
+const langZhButton = document.getElementById("lang-zh");
 const pageTitle = document.getElementById("page-title");
 const cultureTitle = document.getElementById("culture-title");
 const cultureText = document.getElementById("culture-text");
@@ -100,6 +101,36 @@ const translations = {
     uploadComplete: "Carga completa",
     uploadFailed: "La carga fall\u00f3",
   },
+  zh: {
+    pageTitle: "\u83b7\u53d6\u60a8\u7684\u6f2b\u753b\u7167\u7247",
+    cultureTitle: "\u65e0\u8138\u73a9\u5076",
+    cultureText:
+      "\u65e0\u8138\u73a9\u5076\u4e8e1981\u5e74\u5728\u591a\u7c73\u5c3c\u52a0\u5171\u548c\u56fd\u5317\u90e8\u7684\u83ab\u5361\u8bde\u751f\uff0c\u7531\u9676\u827a\u5de5\u5320Liliana Mera Lime\u624b\u5de5\u5851\u9020\u3002\u7531\u4e8e\u5f53\u65f6\u7f3a\u5c11\u6a21\u5177\u4e0e\u5de5\u5177\uff0c\u5979\u521b\u4f5c\u51fa\u4e86\u8fd9\u4e2a\u6807\u5fd7\u6027\u7684\u7a7a\u767d\u9762\u5b54\uff0c\u540e\u6765\u5b83\u4e5f\u6210\u4e3a\u591a\u7c73\u5c3c\u52a0\u6587\u5316\u4e2d\u6700\u53d7\u559c\u7231\u7684\u8c61\u5f81\u4e4b\u4e00\u3002",
+    takePicture: "\u62cd\u7167",
+    tapToStart: "\u70b9\u51fb\u201c\u62cd\u7167\u201d\u5f00\u59cb",
+    startingCamera: "\u6b63\u5728\u542f\u52a8\u6444\u50cf\u5934...",
+    cameraDenied: "\u6444\u50cf\u5934\u8bbf\u95ee\u88ab\u62d2\u7edd\u3002\u8bf7\u5141\u8bb8\u6444\u50cf\u5934\u6743\u9650\u3002",
+    cameraNotReady: "\u6444\u50cf\u5934\u5c1a\u672a\u51c6\u5907\u597d\uff0c\u8bf7\u518d\u8bd5\u4e00\u6b21\u3002",
+    standOnBlueX: "\u8bf7\u7ad9\u5728\u84dd\u8272X\u4e0a",
+    emailTitle: "\u8f93\u5165\u60a8\u7684\u90ae\u7bb1",
+    emailLabel: "\u90ae\u7bb1",
+    emailPlaceholder: "you@example.com",
+    emailInvalid: "\u8bf7\u8f93\u5165\u6709\u6548\u7684\u90ae\u7bb1\u5730\u5740\u3002",
+    emailStart: "\u5f00\u59cb",
+    cancel: "\u53d6\u6d88",
+    uploadWaitingTitle: "\u6b63\u5728\u66f4\u65b0\u7167\u7247",
+    uploadWaitingMessage:
+      "\u60a8\u7684\u7167\u7247\u5df2\u62cd\u6444\uff0c\u5f88\u5feb\u5c31\u4f1a\u51fa\u73b0\u5728\u60a8\u7684\u90ae\u7bb1\u4e2d\u3002",
+    uploadDoneTitle: "\u7167\u7247\u5df2\u53d1\u9001",
+    uploadDoneMessage:
+      "\u7167\u7247\u5c06\u57283\u52305\u5206\u949f\u5185\u53d1\u9001\u5230\u60a8\u7684\u90ae\u7bb1\uff08\u5982\u672a\u770b\u5230\uff0c\u8bf7\u68c0\u67e5\u5783\u573e\u90ae\u4ef6\uff09\u3002",
+    uploadErrorTitle: "\u65e0\u6cd5\u53d1\u9001\u7167\u7247",
+    done: "\u5b8c\u6210",
+    activitiesTitle: "\u591a\u7c73\u5c3c\u52a0\u5171\u548c\u56fd\u6709\u8da3\u6d3b\u52a8",
+    back: "\u8fd4\u56de",
+    uploadComplete: "\u4e0a\u4f20\u5b8c\u6210",
+    uploadFailed: "\u4e0a\u4f20\u5931\u8d25",
+  },
 };
 
 startCamera();
@@ -111,6 +142,7 @@ activitiesCloseButton.addEventListener("click", closeActivitiesModal);
 resultCloseButton.addEventListener("click", closeResultModal);
 langEnButton.addEventListener("click", () => setLanguage("en"));
 langEsButton.addEventListener("click", () => setLanguage("es"));
+langZhButton.addEventListener("click", () => setLanguage("zh"));
 emailInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
@@ -173,7 +205,7 @@ function closeActivitiesModal() {
 }
 
 function setLanguage(language) {
-  currentLanguage = language === "es" ? "es" : "en";
+  currentLanguage = language === "es" || language === "zh" ? language : "en";
   applyTranslations();
 }
 
@@ -192,16 +224,29 @@ function applyTranslations() {
   activitiesCloseButton.textContent = copy.back;
   langEnButton.classList.toggle("is-active", currentLanguage === "en");
   langEsButton.classList.toggle("is-active", currentLanguage === "es");
+  langZhButton.classList.toggle("is-active", currentLanguage === "zh");
 
   if (!resultModal.hidden) {
     if (resultCloseButton.disabled) {
       showUploadPopup(copy.uploadWaitingTitle, copy.uploadWaitingMessage, false);
     }
-  } else if (captureStatus.textContent === translations.en.tapToStart || captureStatus.textContent === translations.es.tapToStart) {
+  } else if (
+    captureStatus.textContent === translations.en.tapToStart ||
+    captureStatus.textContent === translations.es.tapToStart ||
+    captureStatus.textContent === translations.zh.tapToStart
+  ) {
     captureStatus.textContent = copy.tapToStart;
-  } else if (captureStatus.textContent === translations.en.startingCamera || captureStatus.textContent === translations.es.startingCamera) {
+  } else if (
+    captureStatus.textContent === translations.en.startingCamera ||
+    captureStatus.textContent === translations.es.startingCamera ||
+    captureStatus.textContent === translations.zh.startingCamera
+  ) {
     captureStatus.textContent = copy.startingCamera;
-  } else if (captureStatus.textContent === translations.en.standOnBlueX || captureStatus.textContent === translations.es.standOnBlueX) {
+  } else if (
+    captureStatus.textContent === translations.en.standOnBlueX ||
+    captureStatus.textContent === translations.es.standOnBlueX ||
+    captureStatus.textContent === translations.zh.standOnBlueX
+  ) {
     captureStatus.textContent = copy.standOnBlueX;
   }
 
